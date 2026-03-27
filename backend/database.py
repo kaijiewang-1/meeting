@@ -222,18 +222,18 @@ def seed_data():
 
     bookings_data = [
         ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '001', '产品周例会', 2, 2,
-         f'{today}T09:00:00', f'{today}T10:00:00', 10, 'BOOKED', 'PENDING', ''),
+         f'{today}T09:00:00', f'{today}T10:00:00', 10, 'BOOKED', ''),
         ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '002', '技术方案评审', 3, 1,
-         f'{today}T14:00:00', f'{today}T16:00:00', 15, 'BOOKED', 'PENDING', '需要提前准备投影'),
+         f'{today}T14:00:00', f'{today}T16:00:00', 15, 'BOOKED', '需要提前准备投影'),
         ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '003', '项目启动会', 2, 4,
-         f'{today}T09:00:00', f'{today}T12:00:00', 25, 'BOOKED', 'PENDING', '需提前布置场地'),
+         f'{today}T09:00:00', f'{today}T12:00:00', 25, 'BOOKED', '需提前布置场地'),
     ]
 
     for b in bookings_data:
         cursor.execute('''
             INSERT INTO bookings (booking_no, subject, organizer_id, room_id, start_time, end_time,
-                                  attendee_count, status, check_in_status, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  attendee_count, status, remark)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', b)
 
     conn.commit()
