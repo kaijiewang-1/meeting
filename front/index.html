@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会议室预定系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/variables.css">
+  <link rel="stylesheet" href="styles/reset.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+  <div id="app-boot-placeholder" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f0f2f5;font-family:system-ui,sans-serif;color:#6b7280;font-size:15px;">
+    正在加载会议室预定系统…
+  </div>
+  <script src="scripts/store.js"></script>
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/api.js"></script>
+  <script src="scripts/toast.js"></script>
+  <script src="scripts/router.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    // Auto-redirect logged-in users from root
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.location.hash) {
+        if (auth.isLoggedIn()) {
+          window.location.hash = '#/home';
+        } else {
+          window.location.hash = '#/login';
+        }
+      }
+      App.init();
+    });
+  </script>
+</body>
+</html>
