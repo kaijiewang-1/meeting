@@ -1,215 +1,229 @@
-// Mock data and API client
-const API_BASE = '/api';
+// 会议室预定系统 - API 客户端
+// 所有接口调用通过此模块，发往后端 Flask 服务
+const API_BASE = 'http://127.0.0.1:5000/api';
 
-// Simulated delay
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
+// 统一请求头
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
+  const token = auth.getToken();
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
 
-// Mock data
-const MOCK_ROOMS = [
-  { id: 1, name: '星辰厅', building: '总部大楼', floor: '10F', capacity: 20, facilities: ['projector', 'whiteboard', 'video_conf', 'tv'], status: 'AVAILABLE', description: '大型会议室，配有专业投影设备，适合团队会议和培训', openHours: '08:00-20:00', image: '🌟' },
-  { id: 2, name: '海洋厅', building: '总部大楼', floor: '9F', capacity: 12, facilities: ['projector', 'whiteboard', 'tv'], status: 'AVAILABLE', description: '中型会议室，适合部门会议和讨论', openHours: '08:00-20:00', image: '🌊' },
-  { id: 3, name: '森林厅', building: '总部大楼', floor: '8F', capacity: 8, facilities: ['whiteboard', 'tv'], status: 'BUSY', description: '小型会议室，适合小组讨论和头脑风暴', openHours: '08:00-20:00', image: '🌲' },
-  { id: 4, name: '云端阁', building: '总部大楼', floor: '11F', capacity: 30, facilities: ['projector', 'video_conf', 'whiteboard', 'tv', 'audio'], status: 'AVAILABLE', description: '大型多功能厅，配有视频会议系统和专业音响', openHours: '08:00-22:00', image: '☁️' },
-  { id: 5, name: '创意坊', building: '总部大楼', floor: '7F', capacity: 6, facilities: ['whiteboard', 'tv'], status: 'MAINTENANCE', description: '小型创意空间，适合小型讨论和快速会议', openHours: '09:00-18:00', image: '💡' },
-  { id: 6, name: '未来厅', building: '分部大楼', floor: '5F', capacity: 16, facilities: ['projector', 'video_conf', 'whiteboard'], status: 'AVAILABLE', description: '中型会议室，配备现代化会议设备', openHours: '08:00-19:00', image: '🚀' },
-  { id: 7, name: '阳光房', building: '分部大楼', floor: '3F', capacity: 4, facilities: ['tv'], status: 'AVAILABLE', description: '小型会客室，温馨舒适', openHours: '08:00-18:00', image: '☀️' },
-  { id: 8, name: '静思室', building: '总部大楼', floor: '10F', capacity: 2, facilities: [], status: 'AVAILABLE', description: '小型独立空间，适合一对一沟通', openHours: '08:00-20:00', image: '🌙' },
-];
+// 统一错误处理
+async function request(method, path, body = null) {
+  const options = { method, headers: headers() };
+  if (body) options.body = JSON.stringify(body);
 
-const MOCK_BOOKINGS = [
-  { id: 1, bookingNo: 'BK20260325001', subject: '产品周例会', roomId: 2, roomName: '海洋厅', organizerId: 1, organizerName: '张明', startTime: '2026-03-25T09:00:00', endTime: '2026-03-25T10:00:00', status: 'BOOKED', checkInStatus: 'PENDING', attendeeCount: 10, remark: '' },
-  { id: 2, bookingNo: 'BK20260325002', subject: '技术方案评审', roomId: 1, roomName: '星辰厅', organizerId: 2, organizerName: '李华', startTime: '2026-03-25T14:00:00', endTime: '2026-03-25T16:00:00', status: 'BOOKED', checkInStatus: 'PENDING', attendeeCount: 15, remark: '需要提前准备投影' },
-  { id: 3, bookingNo: 'BK20260324001', subject: '客户拜访准备', roomId: 6, roomName: '未来厅', organizerId: 1, organizerName: '张明', startTime: '2026-03-24T10:00:00', endTime: '2026-03-24T11:00:00', status: 'FINISHED', checkInStatus: 'CHECKED_IN', attendeeCount: 5, remark: '' },
-  { id: 4, bookingNo: 'BK20260326001', subject: '项目启动会', roomId: 4, roomName: '云端阁', organizerId: 1, organizerName: '张明', startTime: '2026-03-26T09:00:00', endTime: '2026-03-26T12:00:00', status: 'BOOKED', checkInStatus: 'PENDING', attendeeCount: 25, remark: '需提前布置场地' },
-  { id: 5, bookingNo: 'BK20260325003', subject: '培训课程', roomId: 1, roomName: '星辰厅', organizerId: 3, organizerName: '王芳', startTime: '2026-03-25T13:00:00', endTime: '2026-03-25T15:00:00', status: 'BOOKED', checkInStatus: 'PENDING', attendeeCount: 18, remark: '新员工入职培训' },
-];
+  const res = await fetch(`${API_BASE}${path}`, options);
+  const json = await res.json();
 
-const MOCK_STATS = {
-  totalRooms: 8,
-  availableRooms: 5,
-  todayBookings: 4,
-  utilizationRate: 62.5,
-  weeklyData: [
-    { day: '周一', bookings: 12, utilization: 75 },
-    { day: '周二', bookings: 18, utilization: 90 },
-    { day: '周三', bookings: 15, utilization: 80 },
-    { day: '周四', bookings: 20, utilization: 95 },
-    { day: '周五', bookings: 14, utilization: 70 },
-    { day: '周六', bookings: 5, utilization: 25 },
-    { day: '周日', bookings: 3, utilization: 15 },
-  ],
-  buildingData: [
-    { building: '总部大楼', bookings: 45, rate: 72 },
-    { building: '分部大楼', bookings: 22, rate: 55 },
-  ],
-};
+  // Token 失效，跳转登录
+  if (json.code === 40101) {
+    auth.logout();
+    throw { code: 40101, message: json.message || '登录已过期，请重新登录' };
+  }
 
-// API client
+  if (json.code !== 0 && json.code !== undefined) {
+    throw { code: json.code, message: json.message || '请求失败' };
+  }
+
+  return json;
+}
+
+// 字段名映射：snake_case (后端) → camelCase (前端)
+function mapRoom(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    name: r.name,
+    building: r.building,
+    floor: r.floor,
+    capacity: r.capacity,
+    facilities: r.facilities || [],
+    status: r.status,
+    description: r.description || '',
+    openHours: r.open_hours || r.openHours || '08:00-22:00',
+    image: r.image || '🏢',
+  };
+}
+
+function mapBooking(b) {
+  if (!b) return null;
+  return {
+    id: b.id,
+    bookingNo: b.booking_no || b.bookingNo,
+    subject: b.subject,
+    roomId: b.room_id || b.roomId,
+    roomName: b.room_name || b.roomName,
+    organizerId: b.organizer_id || b.organizerId,
+    organizerName: b.organizer_name || b.organizerName,
+    startTime: b.start_time || b.startTime,
+    endTime: b.end_time || b.endTime,
+    attendeeCount: b.attendee_count || b.attendeeCount,
+    status: b.status,
+    checkInStatus: b.check_in_status || b.checkInStatus || 'PENDING',
+    remark: b.remark || '',
+    canceledAt: b.canceled_at || b.canceledAt,
+    finishedAt: b.finished_at || b.finishedAt,
+    createdAt: b.created_at || b.createdAt,
+    updatedAt: b.updated_at || b.updatedAt,
+  };
+}
+
+function mapStats(s) {
+  if (!s) return null;
+  return {
+    totalRooms: s.totalRooms,
+    availableRooms: s.availableRooms,
+    todayBookings: s.todayBookings,
+    utilizationRate: s.utilizationRate,
+    weeklyData: s.weeklyData || [],
+    buildingData: s.buildingData || [],
+    roomsUsage: s.roomsUsage || [],
+  };
+}
+
 const api = {
-  // Auth
+  // ── 认证 ──────────────────────────────────────────────
+
   async login(username, password) {
-    await delay(400);
-    if (username && password) {
-      const isAdmin = username === 'admin';
-      return {
-        code: 0,
-        message: '登录成功',
-        data: {
-          token: 'mock_jwt_token_' + Date.now(),
-          user: { id: isAdmin ? 999 : 1, username, name: username === 'admin' ? '系统管理员' : '张明', email: `${username}@company.com`, avatar: null },
-          role: isAdmin ? 'admin' : 'user',
-        },
-      };
-    }
-    throw { code: 401, message: '用户名或密码错误' };
+    const json = await request('POST', '/auth/login', { username, password });
+    // 登录成功后 auth 状态由 login.js 写入 store
+    return json;
   },
 
-  // Rooms
+  // ── 会议室 ──────────────────────────────────────────────
+
   async getRooms(params = {}) {
-    await delay(300);
-    let rooms = [...MOCK_ROOMS];
-    if (params.building) rooms = rooms.filter(r => r.building === params.building);
-    if (params.floor) rooms = rooms.filter(r => r.floor === params.floor);
-    if (params.capacity) rooms = rooms.filter(r => r.capacity >= parseInt(params.capacity));
-    if (params.facilities && params.facilities.length) {
-      rooms = rooms.filter(r => params.facilities.every(f => r.facilities.includes(f)));
-    }
-    if (params.status) rooms = rooms.filter(r => r.status === params.status);
-    return { code: 0, message: 'success', data: rooms, total: rooms.length };
+    const qs = new URLSearchParams();
+    if (params.building) qs.set('building', params.building);
+    if (params.floor) qs.set('floor', params.floor);
+    if (params.capacity) qs.set('capacity', params.capacity);
+    if (params.status) qs.set('status', params.status);
+    if (params.date) qs.set('date', params.date);
+    const path = `/rooms${qs.toString() ? '?' + qs.toString() : ''}`;
+    const json = await request('GET', path);
+    return { ...json, data: (json.data || []).map(mapRoom) };
   },
 
   async getAvailableRooms(params = {}) {
-    await delay(300);
-    const rooms = MOCK_ROOMS.filter(r => r.status === 'AVAILABLE');
-    let filtered = [...rooms];
-    if (params.capacity) filtered = filtered.filter(r => r.capacity >= parseInt(params.capacity));
-    if (params.building) filtered = filtered.filter(r => r.building === params.building);
+    const qs = new URLSearchParams();
+    if (params.date) qs.set('date', params.date);
+    if (params.startTime) qs.set('startTime', params.start);
+    if (params.endTime) qs.set('endTime', params.end);
+    if (params.capacity) qs.set('capacity', params.capacity);
+    if (params.building) qs.set('building', params.building);
+    if (params.floor) qs.set('floor', params.floor);
     if (params.facilities && params.facilities.length) {
-      filtered = filtered.filter(r => params.facilities.every(f => r.facilities.includes(f)));
+      params.facilities.forEach(f => qs.append('facilities', f));
     }
-    return { code: 0, message: 'success', data: filtered, total: filtered.length };
+    const path = `/rooms/available${qs.toString() ? '?' + qs.toString() : ''}`;
+    const json = await request('GET', path);
+    return { ...json, data: (json.data || []).map(mapRoom) };
   },
 
   async getRoom(id) {
-    await delay(200);
-    const room = MOCK_ROOMS.find(r => r.id === parseInt(id));
-    if (!room) throw { code: 404, message: '会议室不存在' };
-    return { code: 0, message: 'success', data: room };
+    const json = await request('GET', `/rooms/${id}`);
+    return { ...json, data: mapRoom(json.data) };
   },
 
   async getRoomSchedule(id, date) {
-    await delay(300);
-    const dayBookings = MOCK_BOOKINGS.filter(b => {
-      const bDate = b.startTime.split('T')[0];
-      return b.roomId === parseInt(id) && bDate === date && b.status !== 'CANCELED';
-    });
-    return { code: 0, message: 'success', data: dayBookings };
+    const json = await request('GET', `/rooms/${id}/schedule?date=${date}`);
+    return { ...json, data: (json.data || []).map(mapBooking) };
   },
 
-  // Bookings
+  // ── 预定 ──────────────────────────────────────────────
+
   async getMyBookings(params = {}) {
-    await delay(300);
-    const userId = auth.getUser()?.id || 1;
-    let bookings = MOCK_BOOKINGS.filter(b => b.organizerId === userId || auth.isAdmin());
-    if (params.status) {
-      if (params.status === 'active') {
-        bookings = bookings.filter(b => ['BOOKED', 'CHECKED_IN', 'IN_USE'].includes(b.status));
-      } else {
-        bookings = bookings.filter(b => b.status === params.status);
-      }
-    }
-    return { code: 0, message: 'success', data: bookings, total: bookings.length };
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    const path = `/bookings/my${qs.toString() ? '?' + qs.toString() : ''}`;
+    const json = await request('GET', path);
+    return { ...json, data: (json.data || []).map(mapBooking) };
   },
 
   async createBooking(data) {
-    await delay(500);
-    const conflict = MOCK_BOOKINGS.find(b =>
-      b.roomId === data.roomId &&
-      ['BOOKED', 'CHECKED_IN', 'IN_USE'].includes(b.status) &&
-      b.startTime < data.endTime && b.endTime > data.startTime
-    );
-    if (conflict) throw { code: 409, message: '该时间段已被其他会议预定' };
-    const newBooking = {
-      id: Math.max(...MOCK_BOOKINGS.map(b => b.id)) + 1,
-      bookingNo: 'BK' + Date.now(),
+    const body = {
       subject: data.subject,
       roomId: data.roomId,
-      roomName: MOCK_ROOMS.find(r => r.id === data.roomId)?.name || '',
-      organizerId: auth.getUser()?.id || 1,
-      organizerName: auth.getUser()?.name || '',
       startTime: data.startTime,
       endTime: data.endTime,
-      status: 'BOOKED',
-      checkInStatus: 'PENDING',
       attendeeCount: data.attendeeCount || 1,
       remark: data.remark || '',
     };
-    MOCK_BOOKINGS.push(newBooking);
-    return { code: 0, message: '预定成功', data: newBooking };
+    const json = await request('POST', '/bookings', body);
+    return { ...json, data: mapBooking(json.data) };
   },
 
   async cancelBooking(id) {
-    await delay(400);
-    const booking = MOCK_BOOKINGS.find(b => b.id === parseInt(id));
-    if (!booking) throw { code: 404, message: '预定记录不存在' };
-    booking.status = 'CANCELED';
-    return { code: 0, message: '已取消预定' };
+    const json = await request('POST', `/bookings/${id}/cancel`);
+    return { ...json, data: mapBooking(json.data) };
   },
 
   async checkIn(id) {
-    await delay(300);
-    const booking = MOCK_BOOKINGS.find(b => b.id === parseInt(id));
-    if (!booking) throw { code: 404, message: '预定记录不存在' };
-    booking.checkInStatus = 'CHECKED_IN';
-    booking.status = 'CHECKED_IN';
-    return { code: 0, message: '签到成功' };
+    const json = await request('POST', `/bookings/${id}/check-in`);
+    return { ...json, data: mapBooking(json.data) };
   },
 
-  // Stats
+  // ── 统计 ──────────────────────────────────────────────
+
   async getStats() {
-    await delay(400);
-    return { code: 0, message: 'success', data: MOCK_STATS };
+    const json = await request('GET', '/admin/stats');
+    return { ...json, data: mapStats(json.data) };
   },
 
-  // Admin
+  // ── 管理 ──────────────────────────────────────────────
+
   async getAdminRooms() {
-    await delay(300);
-    return { code: 0, message: 'success', data: MOCK_ROOMS };
-  },
-
-  async updateRoom(id, data) {
-    await delay(400);
-    const room = MOCK_ROOMS.find(r => r.id === parseInt(id));
-    if (!room) throw { code: 404, message: '会议室不存在' };
-    Object.assign(room, data);
-    return { code: 0, message: '更新成功', data: room };
+    const json = await request('GET', '/admin/rooms');
+    return { ...json, data: (json.data || []).map(mapRoom) };
   },
 
   async createRoom(data) {
-    await delay(500);
-    const newRoom = {
-      id: Math.max(...MOCK_ROOMS.map(r => r.id)) + 1,
-      ...data,
+    const json = await request('POST', '/admin/rooms', {
+      name: data.name,
+      building: data.building,
+      floor: data.floor,
+      capacity: data.capacity,
+      description: data.description || '',
+      open_hours: data.openHours || data.open_hours || '08:00-22:00',
+      image: data.image || '🏢',
+      facilities: data.facilities || [],
       status: data.status || 'AVAILABLE',
-    };
-    MOCK_ROOMS.push(newRoom);
-    return { code: 0, message: '创建成功', data: newRoom };
+    });
+    return { ...json, data: mapRoom(json.data) };
+  },
+
+  async updateRoom(id, data) {
+    const body = {};
+    if (data.name !== undefined) body.name = data.name;
+    if (data.building !== undefined) body.building = data.building;
+    if (data.floor !== undefined) body.floor = data.floor;
+    if (data.capacity !== undefined) body.capacity = data.capacity;
+    if (data.status !== undefined) body.status = data.status;
+    if (data.description !== undefined) body.description = data.description;
+    if (data.open_hours !== undefined) body.open_hours = data.open_hours;
+    if (data.image !== undefined) body.image = data.image;
+    if (data.facilities !== undefined) body.facilities = data.facilities;
+    const json = await request('PUT', `/admin/rooms/${id}`, body);
+    return { ...json, data: mapRoom(json.data) };
   },
 
   async deleteRoom(id) {
-    await delay(300);
-    const idx = MOCK_ROOMS.findIndex(r => r.id === parseInt(id));
-    if (idx === -1) throw { code: 404, message: '会议室不存在' };
-    MOCK_ROOMS.splice(idx, 1);
-    return { code: 0, message: '删除成功' };
+    return request('DELETE', `/admin/rooms/${id}`);
   },
 
-  async getAllBookings() {
-    await delay(300);
-    return { code: 0, message: 'success', data: MOCK_BOOKINGS, total: MOCK_BOOKINGS.length };
+  async getAllBookings(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    if (params.date_from) qs.set('date_from', params.date_from);
+    if (params.date_to) qs.set('date_to', params.date_to);
+    if (params.room_id) qs.set('room_id', params.room_id);
+    const path = `/admin/bookings${qs.toString() ? '?' + qs.toString() : ''}`;
+    const json = await request('GET', path);
+    return { ...json, data: (json.data || []).map(mapBooking) };
   },
 };
 
 window.api = api;
-window.MOCK_BOOKINGS = MOCK_BOOKINGS;
-window.MOCK_ROOMS = MOCK_ROOMS;
