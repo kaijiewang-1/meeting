@@ -11,13 +11,16 @@ async function runPageModule(mod, ...args) {
 // Main App - renders layout and sets up routing
 const App = {
   _routerSetup: false,
+  _notificationHandler: null,
+  _unreadInterval: null,
 
   async init() {
     this.setupRouter();
     await router._resolve();
     this.setupNavActive();
     this.setupUserMenu();
-    this.setupMobileToggle();
+    this.setupMobileMenu();
+    this.setupNotification();
   },
 
   renderLayout() {
@@ -32,7 +35,7 @@ const App = {
       <div class="app-layout">
         <!-- Sidebar -->
         <aside class="app-sidebar" id="sidebar">
-          <a href="#/home" class="sidebar-logo">
+          <div class="sidebar-logo">
             <div class="sidebar-logo-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -43,7 +46,7 @@ const App = {
               <div class="sidebar-logo-text">会议室预定</div>
               <div class="sidebar-logo-sub">Meeting Room Booking</div>
             </div>
-          </a>
+          </div>
 
           <nav class="sidebar-nav" id="sidebarNav">
             <div class="sidebar-section-label">用户端</div>
@@ -110,6 +113,14 @@ const App = {
               </svg>
               数据统计
             </a>
+            <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              审批管理
+              <span class="nav-badge" id="approvalBadge" style="display:none">0</span>
+            </a>
             ` : ''}
           </nav>
 
@@ -135,7 +146,7 @@ const App = {
         <main class="app-main">
           <header class="app-header">
             <div class="header-left">
-              <button class="header-icon-btn" id="mobileMenuBtn" style="display:none">
+              <button class="header-icon-btn" id="menuToggleBtn" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                   <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
@@ -145,12 +156,12 @@ const App = {
               </div>
             </div>
             <div class="header-right">
-              <button class="header-icon-btn" title="消息">
+              <button class="header-icon-btn" id="notificationBtn" title="消息">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                   <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                   <path d="M13.73 21a2 2 0 01-3.46 0"/>
                 </svg>
-                <span class="badge"></span>
+                <span class="badge" id="notificationBadge" style="display:none"></span>
               </button>
               <div class="dropdown" id="userDropdown">
                 <button class="header-icon-btn" onclick="App.toggleUserDropdown()">
@@ -212,19 +223,182 @@ const App = {
     // handled inline
   },
 
-  setupMobileToggle() {
-    const btn = document.getElementById('mobileMenuBtn');
-    const sidebar = document.getElementById('sidebar');
-    if (btn && sidebar) {
-      btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-      btn.addEventListener('click', () => {
+  setupMobileMenu() {
+    setTimeout(() => {
+      const toggleBtn = document.getElementById('menuToggleBtn');
+      const sidebar = document.getElementById('sidebar');
+      
+      if (!toggleBtn || !sidebar) return;
+
+      if (this._handleMenuClick) {
+        toggleBtn.removeEventListener('click', this._handleMenuClick);
+      }
+      
+      this._handleMenuClick = () => {
         sidebar.classList.toggle('open');
+      };
+      
+      toggleBtn.addEventListener('click', this._handleMenuClick);
+
+      const handleResize = () => {
+        if (window.innerWidth <= 768) {
+          toggleBtn.style.display = 'flex';
+          sidebar.classList.remove('open');
+        } else {
+          toggleBtn.style.display = 'none';
+          sidebar.classList.remove('open');
+        }
+      };
+      
+      handleResize();
+      if (this._handleResize) {
+        window.removeEventListener('resize', this._handleResize);
+      }
+      this._handleResize = handleResize;
+      window.addEventListener('resize', this._handleResize);
+    }, 100);
+  },
+
+  setupNotification() {
+    // 延迟执行，确保 DOM 已渲染完成
+    setTimeout(() => {
+      const notificationBtn = document.getElementById('notificationBtn');
+      
+      if (!notificationBtn) {
+        console.log('通知按钮未找到，稍后重试');
+        return;
+      }
+      
+      // 移除可能存在的旧事件，避免重复绑定
+      if (this._notificationHandler) {
+        notificationBtn.removeEventListener('click', this._notificationHandler);
+      }
+      
+      // 保存事件处理函数
+      this._notificationHandler = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        try {
+          // 动态加载通知弹窗模块
+          const module = await import('./pages/notification-popup.js');
+          if (module.showNotificationPopup) {
+            module.showNotificationPopup();
+          } else {
+            console.error('通知模块导出不正确');
+            this.showSimpleNotificationPopup();
+          }
+        } catch (err) {
+          console.error('加载通知模块失败', err);
+          this.showSimpleNotificationPopup();
+        }
+      };
+      
+      // 绑定点击事件
+      notificationBtn.addEventListener('click', this._notificationHandler);
+      console.log('✅ 通知按钮已绑定');
+      
+      // 更新未读数量
+      this.updateUnreadCount();
+      
+      // 定时刷新未读数
+      if (this._unreadInterval) {
+        clearInterval(this._unreadInterval);
+      }
+      this._unreadInterval = setInterval(() => this.updateUnreadCount(), 30000);
+    }, 200);
+  },
+
+  // 备用简单弹窗（当通知模块加载失败时使用）
+  showSimpleNotificationPopup() {
+    const existingPopup = document.getElementById('simpleNotificationPopup');
+    if (existingPopup) existingPopup.remove();
+    
+    const popup = document.createElement('div');
+    popup.id = 'simpleNotificationPopup';
+    popup.style.cssText = `
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      width: 320px;
+      max-width: calc(100vw - 40px);
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 10000;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+    `;
+    popup.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb">
+        <strong style="font-size:14px">消息通知</strong>
+        <button style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280" onclick="this.parentElement.parentElement.remove()">✕</button>
+      </div>
+      <div style="color:#6b7280;text-align:center;padding:40px 20px;font-size:14px">
+        📭 暂无新消息
+      </div>
+    `;
+    document.body.appendChild(popup);
+    
+    // 点击外部关闭
+    setTimeout(() => {
+      const closePopup = (e) => {
+        if (!popup.contains(e.target) && e.target !== document.getElementById('notificationBtn')) {
+          popup.remove();
+          document.removeEventListener('click', closePopup);
+        }
+      };
+      document.addEventListener('click', closePopup);
+    }, 100);
+  },
+
+  async updateUnreadCount() {
+    try {
+      const token = auth.getToken();
+      if (!token) return;
+      
+      const res = await fetch('http://127.0.0.1:5000/api/notifications/unread-count', {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      window.addEventListener('resize', () => {
-        btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-        if (window.innerWidth > 768) sidebar.classList.remove('open');
-      });
+      const data = await res.json();
+      const count = data.data?.count || 0;
+      const badge = document.getElementById('notificationBadge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 99 ? '99+' : count;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+      
+      // 更新审批待处理数量
+      if (auth.isAdmin()) {
+        const pendingRes = await fetch('http://127.0.0.1:5000/api/approvals/pending', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const pendingData = await pendingRes.json();
+        const pendingCount = pendingData.data?.length || 0;
+        const approvalBadge = document.getElementById('approvalBadge');
+        if (approvalBadge) {
+          if (pendingCount > 0) {
+            approvalBadge.textContent = pendingCount > 99 ? '99+' : pendingCount;
+            approvalBadge.style.display = 'inline-flex';
+          } else {
+            approvalBadge.style.display = 'none';
+          }
+        }
+      }
+    } catch (e) {
+      console.error('获取未读数失败', e);
     }
+  },
+
+  bindMenuAfterRoute() {
+    setTimeout(() => {
+      this.setupMobileMenu();
+      this.setupNotification();
+    }, 150);
   },
 
   toggleUserDropdown() {
@@ -272,42 +446,57 @@ const App = {
         console.error(e);
         document.body.innerHTML = App.renderBootError('登录页加载失败', e.message || String(e));
       }
+      this.bindMenuAfterRoute();
     });
 
     router.add('/home', async () => {
       await runPageModule(await import('./pages/home.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/rooms', async () => {
       await runPageModule(await import('./pages/rooms.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/rooms/:id', async (params) => {
       await runPageModule(await import('./pages/room-detail.js'), params.id);
+      this.bindMenuAfterRoute();
     });
 
     router.add('/bookings/new', async () => {
       await runPageModule(await import('./pages/booking-new.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/bookings/my', async () => {
       await runPageModule(await import('./pages/bookings-my.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/calendar', async () => {
       await runPageModule(await import('./pages/calendar.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/admin/rooms', async () => {
       await runPageModule(await import('./pages/admin-rooms.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/admin/bookings', async () => {
       await runPageModule(await import('./pages/admin-bookings.js'));
+      this.bindMenuAfterRoute();
     });
 
     router.add('/admin/stats', async () => {
       await runPageModule(await import('./pages/admin-stats.js'));
+      this.bindMenuAfterRoute();
+    });
+
+    router.add('/admin/approvals', async () => {
+      await runPageModule(await import('./pages/admin-approvals.js'));
+      this.bindMenuAfterRoute();
     });
   },
 

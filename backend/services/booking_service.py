@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 from database import get_db
 from config import Config
+from services.notification_service import notification_service
 
 
 # ─── 冲突检测 ────────────────────────────────────────────────
@@ -162,13 +163,38 @@ def create_booking(organizer_id, data):
              attendee_count, status, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (booking_no, subject, organizer_id, room_id, start_time, end_time,
-              attendee_count, Config.BOOKING_STATUS_BOOKED, remark))
+              attendee_count, 'PENDING_APPROVAL', remark))
         booking_id = cursor.lastrowid
         conn.commit()
     finally:
         conn.close()
 
-    return get_booking_by_id(booking_id), 0, '预定成功'
+    # 获取完整预定信息
+    booking = get_booking_by_id(booking_id)
+    
+    # 发送待审批通知给管理员
+    if booking:
+        booking_data = {
+            'room_name': booking.get('room_name', '会议室'),
+            'start_time': start_time,
+            'end_time': end_time,
+            'subject': subject,
+            'organizer_name': booking.get('organizer_name', '用户')
+        }
+        
+        # 获取所有管理员
+        conn2 = get_db()
+        cursor2 = conn2.cursor()
+        cursor2.execute("SELECT id, name FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE'")
+        admins = cursor2.fetchall()
+        conn2.close()
+        
+        for admin in admins:
+            notification_service.send_booking_pending_approval(
+                booking_id, admin['id'], booking_data
+            )
+    
+    return booking, 0, '预定已提交，等待审批'
 
 
 def get_booking_by_id(booking_id):
@@ -296,6 +322,16 @@ def cancel_booking(booking_id, user_id, is_admin=False):
     # 写操作日志
     _log_operation(user_id, 'CANCEL_BOOKING', 'booking', booking_id,
                   f'取消预定 {booking["booking_no"]}')
+    
+    # 发送取消通知
+    booking_data = {
+        'room_name': booking.get('room_name', '会议室'),
+        'start_time': booking.get('start_time'),
+        'subject': booking.get('subject')
+    }
+    notification_service.send_booking_canceled(
+        booking_id, user_id, booking_data
+    )
 
     return get_booking_by_id(booking_id), 0, '已取消预定'
 

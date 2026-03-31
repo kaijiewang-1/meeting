@@ -26,6 +26,8 @@ def init_db():
             password_hash VARCHAR(200) NOT NULL,
             name VARCHAR(100) NOT NULL,
             email VARCHAR(100),
+            phone VARCHAR(20),
+            wechat_id VARCHAR(100),
             role VARCHAR(20) NOT NULL DEFAULT 'USER',
             status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
@@ -85,7 +87,7 @@ def init_db():
             start_time DATETIME NOT NULL,
             end_time DATETIME NOT NULL,
             attendee_count INTEGER NOT NULL DEFAULT 1,
-            status VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
+            status VARCHAR(32) NOT NULL DEFAULT 'PENDING_APPROVAL',
             remark VARCHAR(500),
             canceled_at DATETIME,
             finished_at DATETIME,
@@ -127,12 +129,30 @@ def init_db():
         )
     ''')
 
+    # 通知表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(200) NOT NULL,
+            content TEXT NOT NULL,
+            extra_data TEXT,
+            is_read INTEGER DEFAULT 0,
+            read_at DATETIME,
+            created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    ''')
+
     # 索引
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookings_room_time ON bookings(room_id, start_time, end_time, status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookings_organizer ON bookings(organizer_id, start_time)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookings_no ON bookings(booking_no)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_room_facilities_room ON room_facilities(room_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_room ON room_maintenance(room_id, start_time, end_time)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at)')
 
     conn.commit()
     conn.close()
@@ -188,23 +208,17 @@ def seed_data():
         room_id = cursor.lastrowid
 
         # 为每个会议室添加设备
-        if room[0] == '星辰厅':
-            facilities = ['projector', 'whiteboard', 'video_conf', 'tv']
-        elif room[0] == '海洋厅':
-            facilities = ['projector', 'whiteboard', 'tv']
-        elif room[0] == '森林厅':
-            facilities = ['whiteboard', 'tv']
-        elif room[0] == '云端阁':
-            facilities = ['projector', 'video_conf', 'whiteboard', 'tv', 'audio']
-        elif room[0] == '创意坊':
-            facilities = ['whiteboard', 'tv']
-        elif room[0] == '未来厅':
-            facilities = ['projector', 'video_conf', 'whiteboard']
-        elif room[0] == '阳光房':
-            facilities = ['tv']
-        else:
-            facilities = []
-
+        facilities_map = {
+            '星辰厅': ['projector', 'whiteboard', 'video_conf', 'tv'],
+            '海洋厅': ['projector', 'whiteboard', 'tv'],
+            '森林厅': ['whiteboard', 'tv'],
+            '云端阁': ['projector', 'video_conf', 'whiteboard', 'tv', 'audio'],
+            '创意坊': ['whiteboard', 'tv'],
+            '未来厅': ['projector', 'video_conf', 'whiteboard'],
+            '阳光房': ['tv'],
+            '静思室': []
+        }
+        facilities = facilities_map.get(room[0], [])
         for f in facilities:
             cursor.execute('INSERT INTO room_facilities (room_id, facility_code) VALUES (?, ?)', (room_id, f))
 
@@ -214,27 +228,6 @@ def seed_data():
                                    cancel_limit_minutes, auto_release_minutes, business_start_hour, business_end_hour)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (30, 15, 480, 5, 15, 8, 22))
-
-    # 插入一些预定示例
-    from datetime import datetime, timedelta
-    now = datetime.now()
-    today = now.strftime('%Y-%m-%d')
-
-    bookings_data = [
-        ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '001', '产品周例会', 2, 2,
-         f'{today}T09:00:00', f'{today}T10:00:00', 10, 'BOOKED', ''),
-        ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '002', '技术方案评审', 3, 1,
-         f'{today}T14:00:00', f'{today}T16:00:00', 15, 'BOOKED', '需要提前准备投影'),
-        ('BK' + datetime.now().strftime('%Y%m%d%H%M%S') + '003', '项目启动会', 2, 4,
-         f'{today}T09:00:00', f'{today}T12:00:00', 25, 'BOOKED', '需提前布置场地'),
-    ]
-
-    for b in bookings_data:
-        cursor.execute('''
-            INSERT INTO bookings (booking_no, subject, organizer_id, room_id, start_time, end_time,
-                                  attendee_count, status, remark)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', b)
 
     conn.commit()
     conn.close()

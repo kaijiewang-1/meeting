@@ -15,6 +15,8 @@ from routes.auth_routes import auth_bp
 from routes.room_routes import rooms_bp
 from routes.booking_routes import bookings_bp
 from routes.admin_routes import admin_bp
+from routes.notification_routes import notification_bp
+from routes.approval_routes import approval_bp
 
 
 def create_app():
@@ -29,6 +31,8 @@ def create_app():
     app.register_blueprint(rooms_bp)
     app.register_blueprint(bookings_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(notification_bp)
+    app.register_blueprint(approval_bp)
 
     # 健康检查
     @app.route('/api/health', methods=['GET'])

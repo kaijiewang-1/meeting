@@ -251,8 +251,9 @@ export default async function init() {
                           <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg> 提交预定`;
 
-        Toast.success(`预定成功！预定编号：${res.data.bookingNo}`);
-        setTimeout(() => router.navigate('/bookings/my'), 1500);
+        // 修改提示信息：等待审批
+        Toast.success(`预定申请已提交，等待管理员审批！`);
+        setTimeout(() => router.navigate('/bookings/my'), 2000);
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
