@@ -1,9 +1,11 @@
 :root {
-  /* Brand */
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
-  --color-primary-light: #eef2ff;
-  --color-primary-dark: #3730a3;
+  /* Brand — 淡紫主题 */
+  --color-primary: #8b6bc9;
+  --color-primary-hover: #7a5ab8;
+  --color-primary-light: #f3edfc;
+  --color-primary-dark: #5c3d8a;
+  --color-primary-muted: #c4b5e8;
+  --shadow-focus-primary: 0 0 0 3px rgba(139, 107, 201, 0.22);
 
   /* Status */
   --color-available: #10b981;
@@ -21,12 +23,12 @@
   --color-success: #10b981;
   --color-success-bg: #d1fae5;
 
-  /* Neutrals */
-  --color-bg: #f0f2f5;
+  /* Neutrals（背景带极淡紫倾向） */
+  --color-bg: #f6f4fb;
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
-  --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
+  --color-border: #e8e4f2;
+  --color-border-light: #f0ecf8;
   --color-divider: #e5e7eb;
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
@@ -37,6 +39,8 @@
   --sidebar-width: 240px;
   --header-height: 60px;
   --content-max-width: 1280px;
+  --mobile-bottom-nav-height: 56px;
+  --mobile-breakpoint: 768px;
 
   /* Radius */
   --radius-sm: 6px;
@@ -64,6 +68,8 @@
   --z-modal-backdrop: 400;
   --z-modal: 500;
   --z-toast: 600;
+  --z-sidebar-backdrop: 95;
+  --z-bottom-nav: 120;
   --z-tooltip: 700;
 
   /* Typography */

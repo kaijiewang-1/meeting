@@ -130,6 +130,8 @@ export default async function init() {
 async function loadRooms() {
   const filters = {
     date: document.getElementById('filterDate')?.value,
+    startTime: document.getElementById('filterStart')?.value,
+    endTime: document.getElementById('filterEnd')?.value,
     building: document.getElementById('filterBuilding')?.value,
     capacity: document.getElementById('filterCapacity')?.value,
     facilities: document.getElementById('filterFacilities')?.value ? [document.getElementById('filterFacilities').value] : [],
@@ -167,7 +169,7 @@ async function loadRooms() {
         AVAILABLE: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
         BUSY: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
         MAINTENANCE: 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)',
-      }[room.status] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      }[room.status] || 'linear-gradient(135deg, var(--color-primary) 0%, #b39ddb 100%)';
 
       const statusLabel = {
         AVAILABLE: '空闲',

@@ -22,7 +22,7 @@ export default async function init() {
     <div class="filter-bar" style="margin-bottom:20px">
       <div class="filter-item">
         <span class="filter-label">日期范围</span>
-        <input type="date" class="form-input" id="filterDateFrom" value="${utils.today()}" style="min-width:150px">
+        <input type="date" class="form-input" id="filterDateFrom" value="" style="min-width:150px" title="留空则查询全部日期">
       </div>
       <div class="filter-item">
         <span class="filter-label">状态</span>
@@ -72,7 +72,14 @@ async function loadAdminBookings() {
   content.innerHTML = App.renderSkeleton('table', 5);
 
   try {
-    const res = await api.getAllBookings();
+    const dateFrom = document.getElementById('filterDateFrom')?.value;
+    const dateTo = document.getElementById('filterDateTo')?.value;
+    const status = document.getElementById('filterStatus')?.value;
+    const res = await api.getAllBookings({
+      date_from: dateFrom || undefined,
+      date_to: dateTo || dateFrom || undefined,
+      status: status || undefined,
+    });
     const bookings = res.data;
 
     content.innerHTML = `

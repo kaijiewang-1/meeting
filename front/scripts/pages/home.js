@@ -4,13 +4,52 @@ export default async function init() {
   App.updateBreadcrumb([{ label: '首页' }]);
 
   App.setPageView(`
-    <div class="page-header">
-      <h1 class="page-title">工作台</h1>
-      <p class="page-subtitle">欢迎回来，${utils.escapeHtml(auth.getUser()?.name || '')}！今天需要预定会议室吗？</p>
+    <div class="page-header home-workbench-header">
+      <div class="home-workbench-header-row">
+        <div class="home-workbench-intro">
+          <h1 class="page-title">工作台</h1>
+          <p class="page-subtitle">欢迎回来，${utils.escapeHtml(auth.getUser()?.name || '')}！需要会议室时，可直接新建预约。</p>
+        </div>
+        <div class="home-workbench-header-actions">
+          <a href="#/bookings/new" class="btn btn-primary home-workbench-book-cta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="20" height="20" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            新建预约
+          </a>
+        </div>
+      </div>
     </div>
 
-    <!-- Quick filter -->
-    <div class="filter-bar" style="margin-bottom:24px">
+    <section class="home-booking-hero" aria-label="新建预约">
+      <div class="home-booking-hero-inner">
+        <div class="home-booking-hero-text">
+          <span class="home-booking-badge">快速入口</span>
+          <h2 class="home-booking-title">在此发起会议预约</h2>
+          <p class="home-booking-desc">与侧栏「新建预约」相同：填写主题、时段与人数，选择会议室并提交。手机端也可使用下方大按钮，无需从菜单进入。</p>
+        </div>
+        <div class="home-booking-actions">
+          <a href="#/bookings/new" class="btn-hero-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="22" height="22" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            新建预约
+          </a>
+          <button type="button" class="btn-hero-secondary" onclick="document.getElementById('homeQuickFilter')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            先查空闲会议室
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div class="home-quick-section" id="homeQuickFilter">
+      <div class="section-label">按条件查找空闲会议室</div>
+    <div class="filter-bar" style="margin-bottom:0">
       <div class="filter-item">
         <span class="filter-label">日期</span>
         <input type="date" class="form-input" id="filterDate" value="${utils.today()}" style="min-width:160px">
@@ -43,10 +82,6 @@ export default async function init() {
         </button>
       </div>
     </div>
-
-    <!-- Stats row -->
-    <div class="grid-4" style="margin-bottom:24px" id="statsRow">
-      ${App.renderSkeleton('card', 4)}
     </div>
 
     <!-- Today's meetings + recommended rooms -->
@@ -100,7 +135,6 @@ export default async function init() {
   `);
 
   // Load data
-  loadStats();
   loadTodayMeetings();
   loadAvailableRooms();
 
@@ -113,82 +147,6 @@ export default async function init() {
       router.navigate(`/rooms?date=${date}&start=${startTime}&end=${endTime}&capacity=${capacity}`);
     }
   };
-}
-
-async function loadStats() {
-  try {
-    const res = await api.getStats();
-    const s = res.data;
-    const el = document.getElementById('statsRow');
-    if (!el) return;
-    el.innerHTML = `
-      <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-primary-light);color:var(--color-primary)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
-        </div>
-        <div class="stat-card-value">${s.totalRooms}</div>
-        <div class="stat-card-label">会议室总数</div>
-        <div class="stat-card-trend up">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-          全楼分布
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-available-bg);color:var(--color-available)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div class="stat-card-value">${s.availableRooms}</div>
-        <div class="stat-card-label">当前空闲</div>
-        <div class="stat-card-trend up" style="color:var(--color-available)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-          可立即预定
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-booked-bg);color:var(--color-booked)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <rect x="3" y="4" width="18" height="18" rx="2"/>
-            <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-            <line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-        </div>
-        <div class="stat-card-value">${s.todayBookings}</div>
-        <div class="stat-card-label">今日预定</div>
-        <div class="stat-card-trend" style="color:var(--color-booked)">
-          会议进行中
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-busy-bg);color:var(--color-busy)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-        </div>
-        <div class="stat-card-value">${s.utilizationRate}%</div>
-        <div class="stat-card-label">今日利用率</div>
-        <div class="stat-card-trend up">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-          近7日平均
-        </div>
-      </div>
-    `;
-  } catch (e) {
-    console.error('Failed to load stats', e);
-  }
 }
 
 async function loadTodayMeetings() {

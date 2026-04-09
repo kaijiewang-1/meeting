@@ -17,7 +17,6 @@ const App = {
     await router._resolve();
     this.setupNavActive();
     this.setupUserMenu();
-    this.setupMobileToggle();
   },
 
   renderLayout() {
@@ -28,8 +27,9 @@ const App = {
     const role = auth.getRole();
     const user = auth.getUser() || { name: '用户', username: 'user' };
 
+    const isAdmin = auth.isAdmin();
     document.body.innerHTML = `
-      <div class="app-layout">
+      <div class="app-layout${isAdmin ? ' app-layout--admin' : ''}">
         <!-- Sidebar -->
         <aside class="app-sidebar" id="sidebar">
           <a href="#/home" class="sidebar-logo">
@@ -67,7 +67,7 @@ const App = {
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
               </svg>
-              新建预定
+              新建预约
             </a>
             <a href="#/bookings/my" class="nav-item" data-page="bookings-my">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -87,7 +87,7 @@ const App = {
               日历视图
             </a>
 
-            ${role === 'admin' ? `
+            ${isAdmin ? `
             <div class="sidebar-section-label">管理端</div>
             <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -118,7 +118,7 @@ const App = {
               <div class="sidebar-avatar">${(user.name || user.username || 'U').charAt(0).toUpperCase()}</div>
               <div class="sidebar-user-info">
                 <div class="sidebar-user-name">${utils.escapeHtml(user.name || user.username)}</div>
-                <div class="sidebar-user-role">${role === 'admin' ? '管理员' : '普通用户'}</div>
+                <div class="sidebar-user-role">${isAdmin ? '管理员' : '普通用户'}</div>
               </div>
               <button class="sidebar-user-btn" onclick="App.logout()" title="退出登录">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -131,11 +131,21 @@ const App = {
           </div>
         </aside>
 
+        <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
         <!-- Main -->
         <main class="app-main">
+          ${isAdmin ? `
+          <div class="admin-mobile-hint" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <span>管理功能建议在<strong>电脑浏览器</strong>中使用，以获得完整表格与统计视图。</span>
+          </div>
+          ` : ''}
           <header class="app-header">
             <div class="header-left">
-              <button class="header-icon-btn" id="mobileMenuBtn" style="display:none">
+              <button type="button" class="header-icon-btn" id="mobileMenuBtn" aria-label="打开菜单" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                   <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
@@ -180,15 +190,83 @@ const App = {
             <!-- Pages render here -->
           </div>
         </main>
+
+        <nav class="app-bottom-nav" id="appBottomNav" aria-label="底部快捷导航">
+          <a href="#/home" class="bottom-nav-item" data-page="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>首页</span>
+          </a>
+          <a href="#/rooms" class="bottom-nav-item" data-page="rooms">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span>会议室</span>
+          </a>
+          <a href="#/bookings/new" class="bottom-nav-item" data-page="bookings-new">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span>预约</span>
+          </a>
+          <a href="#/bookings/my" class="bottom-nav-item" data-page="bookings-my">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>我的</span>
+          </a>
+          <a href="#/calendar" class="bottom-nav-item" data-page="calendar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span>日历</span>
+          </a>
+        </nav>
       </div>
       <div class="toast-container" id="toastContainer"></div>
     `;
+
+    document.dispatchEvent(new CustomEvent('app:navigate', { detail: {} }));
+    this.setupMobileChrome();
   },
 
   getActiveBookingCount() {
     try {
       return 2;
     } catch { return 0; }
+  },
+
+  /** 侧栏与底部导航高亮（hash 路径与 data-page 精确对应） */
+  navPathActive(page, hash) {
+    const h = (hash || '').replace(/^#/, '') || '/';
+    switch (page) {
+      case 'home':
+        return /^\/home$/.test(h);
+      case 'rooms':
+        return /^\/rooms(\/|$)/.test(h);
+      case 'bookings-new':
+        return /^\/bookings\/new/.test(h);
+      case 'bookings-my':
+        return /^\/bookings\/my/.test(h);
+      case 'calendar':
+        return /^\/calendar/.test(h);
+      case 'admin-rooms':
+        return /^\/admin\/rooms/.test(h);
+      case 'admin-bookings':
+        return /^\/admin\/bookings/.test(h);
+      case 'admin-stats':
+        return /^\/admin\/stats/.test(h);
+      default:
+        return !!(page && h.includes(page));
+    }
   },
 
   setupNavActive() {
@@ -198,13 +276,20 @@ const App = {
     }
     this._navActiveBound = true;
     const update = () => {
+      const hash = window.location.hash || '';
       document.querySelectorAll('.nav-item').forEach(item => {
         const page = item.getAttribute('data-page');
-        const hash = window.location.hash;
-        item.classList.toggle('active', page && hash.includes(page));
+        item.classList.toggle('active', this.navPathActive(page, hash));
       });
+      document.querySelectorAll('.bottom-nav-item').forEach(item => {
+        const page = item.getAttribute('data-page');
+        item.classList.toggle('active', this.navPathActive(page, hash));
+      });
+      const adminRoute = /\/admin\//.test(hash.replace(/^#/, '') || '');
+      document.body.classList.toggle('route-admin-mobile', adminRoute && window.innerWidth <= 768);
     };
     document.addEventListener('app:navigate', update);
+    window.addEventListener('resize', update);
     update();
   },
 
@@ -212,19 +297,54 @@ const App = {
     // handled inline
   },
 
-  setupMobileToggle() {
+  closeMobileSidebar() {
+    document.getElementById('sidebar')?.classList.remove('open');
+    document.getElementById('sidebarBackdrop')?.classList.remove('is-visible');
+  },
+
+  syncMobileSidebarVisibility() {
     const btn = document.getElementById('mobileMenuBtn');
     const sidebar = document.getElementById('sidebar');
-    if (btn && sidebar) {
-      btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-      btn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-      });
-      window.addEventListener('resize', () => {
-        btn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-        if (window.innerWidth > 768) sidebar.classList.remove('open');
-      });
+    const bd = document.getElementById('sidebarBackdrop');
+    if (!btn || !sidebar) return;
+    const mobile = window.innerWidth <= 768;
+    btn.style.display = mobile ? 'flex' : 'none';
+    if (!mobile) {
+      sidebar.classList.remove('open');
+      bd?.classList.remove('is-visible');
     }
+  },
+
+  /** 侧栏菜单按钮、遮罩、尺寸变化（使用事件委托，避免 renderLayout 重复绑定失效） */
+  setupMobileChrome() {
+    this.syncMobileSidebarVisibility();
+    if (this._mobileChromeBound) return;
+    this._mobileChromeBound = true;
+
+    document.body.addEventListener('click', (e) => {
+      const t = e.target;
+      if (t.closest('#mobileMenuBtn')) {
+        e.preventDefault();
+        const sidebar = document.getElementById('sidebar');
+        const bd = document.getElementById('sidebarBackdrop');
+        const open = !sidebar?.classList.contains('open');
+        sidebar?.classList.toggle('open', open);
+        bd?.classList.toggle('is-visible', open);
+        return;
+      }
+      if (t.closest('#sidebarBackdrop')) {
+        this.closeMobileSidebar();
+        return;
+      }
+      if (t.closest('.app-sidebar a.nav-item') || t.closest('a.sidebar-logo')) {
+        if (window.innerWidth <= 768) this.closeMobileSidebar();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      this.syncMobileSidebarVisibility();
+      document.dispatchEvent(new CustomEvent('app:navigate', { detail: {} }));
+    });
   },
 
   toggleUserDropdown() {
@@ -321,7 +441,7 @@ const App = {
           <h1 style="margin:0 0 8px;font-size:18px;color:#111827">${title}</h1>
           <p style="margin:0 0 16px;font-size:14px;color:#6b7280;line-height:1.5">${safe}</p>
           <p style="margin:0;font-size:13px;color:#9ca3af;">请确认通过本地服务器打开（如 Live Server），勿直接用 file:// 打开。</p>
-          <button type="button" onclick="location.reload()" style="margin-top:16px;padding:8px 16px;border-radius:8px;border:none;background:#4f46e5;color:#fff;cursor:pointer;font-size:14px;">重新加载</button>
+          <button type="button" onclick="location.reload()" style="margin-top:16px;padding:8px 16px;border-radius:8px;border:none;background:#8b6bc9;color:#fff;cursor:pointer;font-size:14px;">重新加载</button>
         </div>
       </div>`;
   },

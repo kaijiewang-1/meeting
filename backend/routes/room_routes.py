@@ -29,13 +29,18 @@ def get_available():
 @require_auth
 def get_rooms():
     """获取所有会议室"""
+    facilities = request.args.getlist('facilities')
     filters = {
         'building': request.args.get('building'),
         'floor': request.args.get('floor'),
         'capacity': request.args.get('capacity'),
         'status': request.args.get('status'),
+        'date': request.args.get('date'),
+        'start': request.args.get('startTime'),
+        'end': request.args.get('endTime'),
+        'facilities': facilities if facilities else None,
     }
-    rooms = room_service.get_all_rooms({k: v for k, v in filters.items() if v})
+    rooms = room_service.get_all_rooms({k: v for k, v in filters.items() if v is not None and v != ''})
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 

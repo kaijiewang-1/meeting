@@ -10,32 +10,36 @@ export default async function init() {
 
   App.setPageView(`
     <div class="page-header">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
+      <div class="page-header-toolbar">
+        <div class="page-header-titles">
           <h1 class="page-title">日历视图</h1>
           <p class="page-subtitle">按天/周查看会议室预定情况</p>
         </div>
-        <div style="display:flex;gap:8px">
-          <select class="form-select" id="calRoom" style="width:160px">
+        <div class="page-header-actions calendar-toolbar-actions">
+          <select class="form-select" id="calRoom" style="width:160px;min-width:0;flex:1" aria-label="筛选会议室">
             <option value="">全部会议室</option>
           </select>
-          <button class="btn btn-secondary" onclick="CalendarPage.prevWeek()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-          </button>
-          <button class="btn btn-secondary btn-sm" onclick="CalendarPage.thisWeek()" style="padding:8px 12px;font-size:13px">本周</button>
-          <button class="btn btn-secondary" onclick="CalendarPage.nextWeek()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
+          <div class="calendar-week-nav" role="group" aria-label="周切换">
+            <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="CalendarPage.prevWeek()" aria-label="上一周">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm calendar-this-week" onclick="CalendarPage.thisWeek()">本周</button>
+            <button type="button" class="btn btn-secondary calendar-nav-btn" onclick="CalendarPage.nextWeek()" aria-label="下一周">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-body" style="padding:0;overflow-x:auto" id="calendarContainer">
+    <p class="calendar-scroll-hint" role="note">提示：表格较宽，请在区域内<strong>左右滑动</strong>查看全天与一周排期。</p>
+
+    <div class="card calendar-page-card">
+      <div class="card-body calendar-scroll" style="padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch" id="calendarContainer">
         ${App.renderSkeleton('card', 1)}
       </div>
     </div>
@@ -118,9 +122,9 @@ async function renderCalendar(baseDate, roomFilter) {
     }
 
     container.innerHTML = `
-      <div style="min-width:800px">
+      <div class="calendar-grid-root" style="min-width:800px">
         <!-- Header -->
-        <div style="display:grid;grid-template-columns:70px repeat(7,1fr);border-bottom:1px solid var(--color-border);background:var(--color-bg)">
+        <div class="calendar-grid-header" style="display:grid;grid-template-columns:70px repeat(7,1fr);border-bottom:1px solid var(--color-border);background:var(--color-bg)">
           <div style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--color-text-tertiary);border-right:1px solid var(--color-border)">时间</div>
           ${weekDates.map(d => {
             const dStr = utils.formatDate(d);
@@ -158,11 +162,13 @@ async function renderCalendar(baseDate, roomFilter) {
 
                 if (!dayBookings.length) {
                   return `
-                    <div style="padding:4px;border-right:1px solid var(--color-border-light);cursor:pointer;
+                    <div class="cal-cell-empty" style="padding:4px;border-right:1px solid var(--color-border-light);cursor:pointer;
                                 display:flex;align-items:center;justify-content:center;
-                                font-size:11px;color:var(--color-text-tertiary)"
-                                onclick="CalendarPage.quickBook('${dStr}','${slot}')">
-                      <span style="opacity:0;transition:opacity 0.15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">+</span>
+                                font-size:11px;color:var(--color-text-tertiary);min-height:36px"
+                                onclick="CalendarPage.quickBook('${dStr}','${slot}')"
+                                role="button" tabindex="0" title="点击发起预定 ${dStr} ${slot}">
+                      <span class="cal-add-desktop" style="opacity:0;transition:opacity 0.15s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">+</span>
+                      <span class="cal-add-touch" style="font-size:18px;font-weight:300;line-height:1;opacity:0.35">+</span>
                     </div>
                   `;
                 }
@@ -187,9 +193,9 @@ async function renderCalendar(baseDate, roomFilter) {
         }).join('')}
       </div>
 
-      <div style="padding:12px 16px;border-top:1px solid var(--color-border);display:flex;gap:16px;font-size:12px;color:var(--color-text-tertiary)">
-        <span style="font-weight:600;margin-right:4px">说明：</span>
-        点击空白时段可快速发起预定 · 点击预定条可查看详情
+      <div class="calendar-foot-note" style="padding:12px 16px;border-top:1px solid var(--color-border);display:flex;gap:16px;font-size:12px;color:var(--color-text-tertiary)">
+        <span style="font-weight:600;margin-right:4px;flex-shrink:0">说明：</span>
+        <span>点击空白「+」格可快速发起预定；点击彩色条可查看详情。</span>
       </div>
     `;
   } catch (e) {

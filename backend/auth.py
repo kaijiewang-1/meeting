@@ -4,7 +4,7 @@
 import jwt
 import datetime
 from functools import wraps
-from flask import request, g
+from flask import request, g, jsonify
 from werkzeug.security import check_password_hash
 from config import Config
 from database import get_db
@@ -62,7 +62,7 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         user = get_current_user()
         if not user:
-            return {'code': 40101, 'message': '未登录或登录已过期', 'data': None}, 401
+            return jsonify({'code': 40101, 'message': '未登录或登录已过期', 'data': None}), 401
         g.current_user = user
         return f(*args, **kwargs)
     return decorated
@@ -74,9 +74,9 @@ def require_admin(f):
     def decorated(*args, **kwargs):
         user = get_current_user()
         if not user:
-            return {'code': 40101, 'message': '未登录或登录已过期', 'data': None}, 401
+            return jsonify({'code': 40101, 'message': '未登录或登录已过期', 'data': None}), 401
         if user['role'] != 'ADMIN':
-            return {'code': 40301, 'message': '无权限访问', 'data': None}, 403
+            return jsonify({'code': 40301, 'message': '无权限访问', 'data': None}), 403
         g.current_user = user
         return f(*args, **kwargs)
     return decorated

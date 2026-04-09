@@ -31,6 +31,10 @@ def get_all_rooms(filters=None):
         if filters.get('status'):
             sql += ' AND r.status = ?'
             params.append(filters['status'])
+        if filters.get('facilities'):
+            for fac in filters['facilities']:
+                sql += ' AND r.id IN (SELECT room_id FROM room_facilities WHERE facility_code = ?)'
+                params.append(fac)
 
     sql += ' GROUP BY r.id ORDER BY r.building, r.floor, r.name'
     cursor.execute(sql, params)
@@ -44,6 +48,17 @@ def get_all_rooms(filters=None):
         if r['facilities'] == ['']:
             r['facilities'] = []
         rooms.append(r)
+
+    if filters and filters.get('date') and filters.get('start') and filters.get('end'):
+        slot = []
+        for r in rooms:
+            if is_room_conflicted(r['id'], filters['date'], filters['start'], filters['end']):
+                continue
+            if is_room_in_maintenance(r['id'], filters['date'], filters['start'], filters['end']):
+                continue
+            slot.append(r)
+        rooms = slot
+
     return rooms
 
 
@@ -127,8 +142,8 @@ def is_room_conflicted(room_id, date, start, end):
     """检查会议室在指定时间段是否有冲突"""
     conn = get_db()
     cursor = conn.cursor()
-    start_dt = f'{date} {start}:00'
-    end_dt = f'{date} {end}:00'
+    start_dt = f'{date}T{start}:00'
+    end_dt = f'{date}T{end}:00'
     cursor.execute('''
         SELECT id FROM bookings
         WHERE room_id = ?
@@ -147,8 +162,8 @@ def is_room_in_maintenance(room_id, date, start, end):
     """检查会议室在指定时间段是否在维护中"""
     conn = get_db()
     cursor = conn.cursor()
-    start_dt = f'{date} {start}:00'
-    end_dt = f'{date} {end}:00'
+    start_dt = f'{date}T{start}:00'
+    end_dt = f'{date}T{end}:00'
     cursor.execute('''
         SELECT id FROM room_maintenance
         WHERE room_id = ?

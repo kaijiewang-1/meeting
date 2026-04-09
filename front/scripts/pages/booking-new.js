@@ -1,23 +1,34 @@
 // New booking page
 let selectedRoom = null;
 
+function normalizeBookingTime(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{1,2})?$/);
+  if (!m) return '';
+  const h = Math.min(23, Math.max(0, parseInt(m[1], 10)));
+  const min = Math.min(59, Math.max(0, parseInt(m[2], 10)));
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
 export default async function init() {
   const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
   const roomId = params.get('roomId') || '';
   const prefilledDate = params.get('date') || utils.today();
   const prefilledStart = params.get('start') || '';
   const prefilledEnd = params.get('end') || '';
+  const startInputValue = normalizeBookingTime(prefilledStart) || '09:00';
+  const endInputValue = normalizeBookingTime(prefilledEnd) || '10:00';
 
   App.renderLayout();
   App.updateBreadcrumb([
     { label: '首页', href: '#/home' },
     { label: '会议室列表', href: '#/rooms' },
-    { label: '新建预定' },
+    { label: '新建预约' },
   ]);
 
   App.setPageView(`
     <div class="page-header">
-      <h1 class="page-title">新建预定</h1>
+      <h1 class="page-title">新建预约</h1>
       <p class="page-subtitle">填写会议信息并选择会议室</p>
     </div>
 
@@ -41,30 +52,21 @@ export default async function init() {
               </div>
               <div class="form-group">
                 <label class="form-label">参会人数 <span style="color:var(--color-danger)">*</span></label>
-                <select id="attendeeCount" class="form-select" required>
-                  ${Array.from({length: 30}, (_, i) => `<option value="${i+1}">${i+1}人</option>`).join('')}
-                </select>
+                <input type="number" id="attendeeCount" class="form-input" min="1" max="500" step="1" value="4" required inputmode="numeric" placeholder="请输入人数">
+                <div class="form-hint">可直接输入数字，建议不超过会议室容量</div>
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">开始时间 <span style="color:var(--color-danger)">*</span></label>
-                <select id="startTime" class="form-select" required ${prefilledStart ? 'disabled' : ''}>
-                  ${utils.generateTimeSlots(8, 19, 30).map(t => {
-                    const sel = prefilledStart && t === prefilledStart ? 'selected' : '';
-                    return `<option value="${t}" ${sel}>${t}</option>`;
-                  }).join('')}
-                </select>
+                <input type="time" id="startTime" class="form-input" step="60" required value="${startInputValue}" title="24小时制，可键盘输入">
+                <div class="form-hint">24 小时制，例如 09:30</div>
               </div>
               <div class="form-group">
                 <label class="form-label">结束时间 <span style="color:var(--color-danger)">*</span></label>
-                <select id="endTime" class="form-select" required ${prefilledEnd ? 'disabled' : ''}>
-                  ${utils.generateTimeSlots(9, 20, 30).map(t => {
-                    const sel = prefilledEnd && t === prefilledEnd ? 'selected' : '';
-                    return `<option value="${t}" ${sel}>${t}</option>`;
-                  }).join('')}
-                </select>
+                <input type="time" id="endTime" class="form-input" step="60" required value="${endInputValue}" title="须晚于开始时间">
+                <div class="form-hint">须晚于开始时间</div>
               </div>
             </div>
 
@@ -131,26 +133,52 @@ export default async function init() {
     } catch (e) {}
   }
 
-  // Time change handlers
-  const startSelect = document.getElementById('startTime');
-  const endSelect = document.getElementById('endTime');
-  if (startSelect) {
-    startSelect.addEventListener('change', () => BookingNewPage.validateTime());
-    endSelect.addEventListener('change', () => BookingNewPage.validateTime());
+  const startEl = document.getElementById('startTime');
+  const endEl = document.getElementById('endTime');
+  if (startEl && endEl) {
+    const runValidate = () => BookingNewPage.validateTime();
+    startEl.addEventListener('change', runValidate);
+    endEl.addEventListener('change', runValidate);
+    startEl.addEventListener('input', runValidate);
+    endEl.addEventListener('input', runValidate);
   }
 
   window.BookingNewPage = {
     async searchRooms() {
       const date = document.getElementById('bookingDate').value;
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
-      const attendees = document.getElementById('attendeeCount').value;
+      const startTime = normalizeBookingTime(document.getElementById('startTime').value);
+      const endTime = normalizeBookingTime(document.getElementById('endTime').value);
+      const ac = parseInt(String(document.getElementById('attendeeCount').value || '').trim(), 10);
+
+      if (!date) {
+        Toast.warning('请选择日期');
+        return;
+      }
+      if (!startTime || !endTime) {
+        Toast.warning('请填写有效的开始与结束时间');
+        return;
+      }
+      if (!Number.isFinite(ac) || ac < 1) {
+        Toast.warning('请输入有效的参会人数（至少 1）');
+        return;
+      }
+      const [sh, smin] = startTime.split(':').map(n => parseInt(n, 10));
+      const [eh, emin] = endTime.split(':').map(n => parseInt(n, 10));
+      if (sh * 60 + smin >= eh * 60 + emin) {
+        Toast.warning('开始时间必须早于结束时间');
+        return;
+      }
 
       const selector = document.getElementById('roomSelector');
       selector.innerHTML = `<div style="padding:20px;text-align:center;color:var(--color-text-tertiary)">查找中...</div>`;
 
       try {
-        const res = await api.getAvailableRooms({ capacity: attendees });
+        const res = await api.getAvailableRooms({
+          date,
+          startTime,
+          endTime,
+          capacity: String(ac),
+        });
         const rooms = res.data;
         if (!rooms.length) {
           selector.innerHTML = `<div style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:13px">未找到符合条件的空闲会议室</div>`;
@@ -189,18 +217,28 @@ export default async function init() {
         selected.style.background = 'var(--color-primary-light)';
       }
       document.getElementById('selectedRoomId').value = id;
-      const attendeeCount = parseInt(document.getElementById('attendeeCount').value);
+      const attendeeCount = parseInt(document.getElementById('attendeeCount').value, 10) || 0;
       if (capacity < attendeeCount) {
         Toast.warning(`该会议室容量为${capacity}人，低于参会人数${attendeeCount}人`);
       }
     },
 
     validateTime() {
-      const start = document.getElementById('startTime').value;
-      const end = document.getElementById('endTime').value;
-      const startH = parseInt(start.split(':')[0]) * 60 + parseInt(start.split(':')[1]);
-      const endH = parseInt(end.split(':')[0]) * 60 + parseInt(end.split(':')[1]);
+      const start = normalizeBookingTime(document.getElementById('startTime')?.value || '');
+      const end = normalizeBookingTime(document.getElementById('endTime')?.value || '');
       const warning = document.getElementById('conflictWarning');
+      if (!start || !end) {
+        if (warning) warning.style.display = 'none';
+        return;
+      }
+      const sm = start.split(':');
+      const em = end.split(':');
+      const startH = parseInt(sm[0], 10) * 60 + parseInt(sm[1], 10);
+      const endH = parseInt(em[0], 10) * 60 + parseInt(em[1], 10);
+      if (Number.isNaN(startH) || Number.isNaN(endH)) {
+        if (warning) warning.style.display = 'none';
+        return;
+      }
       if (startH >= endH) {
         warning.style.display = 'block';
         document.getElementById('conflictMsg').textContent = '开始时间必须早于结束时间';
@@ -213,17 +251,21 @@ export default async function init() {
       e.preventDefault();
       const subject = document.getElementById('subject').value.trim();
       const date = document.getElementById('bookingDate').value;
-      const startTime = document.getElementById('startTime').value;
-      const endTime = document.getElementById('endTime').value;
-      const roomId = parseInt(document.getElementById('selectedRoomId').value);
-      const attendeeCount = parseInt(document.getElementById('attendeeCount').value);
+      const startTime = normalizeBookingTime(document.getElementById('startTime').value);
+      const endTime = normalizeBookingTime(document.getElementById('endTime').value);
+      const roomId = parseInt(document.getElementById('selectedRoomId').value, 10);
+      const attendeeCount = parseInt(String(document.getElementById('attendeeCount').value || '').trim(), 10);
       const remark = document.getElementById('remark').value.trim();
 
       if (!subject) { Toast.error('请填写会议主题'); return; }
       if (!roomId) { Toast.error('请选择会议室'); return; }
+      if (!startTime || !endTime) { Toast.error('请填写有效的开始与结束时间（HH:MM，24小时制）'); return; }
+      if (!Number.isFinite(attendeeCount) || attendeeCount < 1) { Toast.error('参会人数请输入至少 1 的正整数'); return; }
 
-      const startH = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
-      const endH = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+      const sm = startTime.split(':');
+      const em = endTime.split(':');
+      const startH = parseInt(sm[0], 10) * 60 + parseInt(sm[1], 10);
+      const endH = parseInt(em[0], 10) * 60 + parseInt(em[1], 10);
       if (startH >= endH) { Toast.error('开始时间必须早于结束时间'); return; }
 
       const btn = document.getElementById('submitBtn');

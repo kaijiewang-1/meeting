@@ -1,6 +1,33 @@
 // 会议室预定系统 - API 客户端
-// 所有接口调用通过此模块，发往后端 Flask 服务
-const API_BASE = 'http://127.0.0.1:5000/api';
+// - Flask 单端口（:5000）或公网 HTTPS 同源：使用当前 origin + /api
+// - 本地 python -m http.server 8080 / Live Server 等：请求发到 127.0.0.1:5000/api（避免 /api 被静态服务器当成文件路径 404）
+// - 强制覆盖：localStorage.setItem('MEETING_API_BASE','https://xxx/api')
+const API_BASE = (() => {
+  try {
+    const override = localStorage.getItem('MEETING_API_BASE');
+    if (override && override.trim()) return override.replace(/\/$/, '');
+  } catch (e) { /* ignore */ }
+
+  const { hostname, port, protocol, origin } = window.location;
+  const o = origin.replace(/\/$/, '');
+
+  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isLanIp = /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(hostname);
+
+  if (isLocalHost) {
+    if (port === '5000') return `${o}/api`;
+    if (port && port !== '5000') return 'http://127.0.0.1:5000/api';
+    return `${o}/api`;
+  }
+
+  if (isLanIp) {
+    if (port === '5000') return `${o}/api`;
+    if (port && port !== '5000') return `http://${hostname}:5000/api`;
+    return `${o}/api`;
+  }
+
+  return `${o}/api`;
+})();
 
 // 统一请求头
 function headers() {
@@ -88,8 +115,15 @@ const api = {
   // ── 认证 ──────────────────────────────────────────────
 
   async login(username, password) {
-    const json = await request('POST', '/auth/login', { username, password });
-    // 登录成功后 auth 状态由 login.js 写入 store
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const json = await res.json();
+    if (json.code !== 0) {
+      throw { code: json.code, message: json.message || '登录失败' };
+    }
     return json;
   },
 
@@ -102,6 +136,11 @@ const api = {
     if (params.capacity) qs.set('capacity', params.capacity);
     if (params.status) qs.set('status', params.status);
     if (params.date) qs.set('date', params.date);
+    if (params.startTime) qs.set('startTime', params.startTime);
+    if (params.endTime) qs.set('endTime', params.endTime);
+    if (params.facilities && params.facilities.length) {
+      params.facilities.forEach(f => qs.append('facilities', f));
+    }
     const path = `/rooms${qs.toString() ? '?' + qs.toString() : ''}`;
     const json = await request('GET', path);
     return { ...json, data: (json.data || []).map(mapRoom) };
@@ -110,8 +149,8 @@ const api = {
   async getAvailableRooms(params = {}) {
     const qs = new URLSearchParams();
     if (params.date) qs.set('date', params.date);
-    if (params.startTime) qs.set('startTime', params.start);
-    if (params.endTime) qs.set('endTime', params.end);
+    if (params.startTime) qs.set('startTime', params.startTime);
+    if (params.endTime) qs.set('endTime', params.endTime);
     if (params.capacity) qs.set('capacity', params.capacity);
     if (params.building) qs.set('building', params.building);
     if (params.floor) qs.set('floor', params.floor);
@@ -204,6 +243,7 @@ const api = {
     if (data.status !== undefined) body.status = data.status;
     if (data.description !== undefined) body.description = data.description;
     if (data.open_hours !== undefined) body.open_hours = data.open_hours;
+    if (data.openHours !== undefined) body.open_hours = data.openHours;
     if (data.image !== undefined) body.image = data.image;
     if (data.facilities !== undefined) body.facilities = data.facilities;
     const json = await request('PUT', `/admin/rooms/${id}`, body);

@@ -213,7 +213,7 @@
 .form-textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  box-shadow: var(--shadow-focus-primary);
 }
 
 .form-input::placeholder {
@@ -653,15 +653,72 @@
   font-weight: 500;
 }
 
-/* Responsive */
+/* Responsive（侧栏与主区域见 layout.css） */
 @media (max-width: 768px) {
-  .login-page { flex-direction: column; }
+  .login-page { flex-direction: column; min-height: 100dvh; }
   .login-visual { display: none; }
-  .login-panel { width: 100%; }
-  .app-sidebar { transform: translateX(-100%); }
-  .app-sidebar.open { transform: translateX(0); }
-  .app-main { margin-left: 0; }
+  .login-panel {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 28px 20px 32px;
+    justify-content: flex-start;
+    padding-top: max(28px, env(safe-area-inset-top, 0px));
+  }
   .form-row { grid-template-columns: 1fr; }
-  .filter-bar { flex-direction: column; align-items: stretch; }
-  .filter-actions { margin-left: 0; }
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+  }
+  .filter-item { min-width: 0; width: 100%; }
+  .filter-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .filter-actions .btn { width: 100%; justify-content: center; min-height: 44px; }
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .btn {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+  .btn-sm {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+  .modal {
+    max-height: 92dvh;
+    margin: auto;
+    border-radius: var(--radius-lg);
+  }
+  .modal-overlay {
+    padding: 12px;
+    align-items: flex-end;
+  }
+  .modal-footer {
+    flex-wrap: wrap;
+  }
+  .modal-footer .btn {
+    flex: 1;
+    min-width: calc(50% - 4px);
+  }
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    align-items: stretch;
+  }
+  body:not(.route-admin-mobile) .toast-container {
+    bottom: calc(12px + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+  .toast {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
 }

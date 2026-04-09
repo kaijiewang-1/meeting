@@ -67,8 +67,12 @@ const store = new Store();
 const auth = {
   getUser: () => store.get('user'),
   getToken: () => store.get('token'),
-  getRole: () => store.get('role') || 'user',
-  isAdmin: () => store.get('role') === 'admin',
+  getRole: () => {
+    const r = store.get('role');
+    if (r == null || r === '') return 'user';
+    return String(r).toLowerCase();
+  },
+  isAdmin: () => String(store.get('role') || '').toUpperCase() === 'ADMIN',
   isLoggedIn: () => !!store.get('token'),
   login(user, token, role = 'user') {
     store.set('user', user);

@@ -11,12 +11,12 @@ export async function init(id) {
 
   App.setPageView(`
     <div class="page-header">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
+      <div class="page-header-toolbar">
+        <div class="page-header-titles">
           <h1 class="page-title" id="roomName">加载中...</h1>
           <p class="page-subtitle" id="roomLocation">-</p>
         </div>
-        <div style="display:flex;gap:8px">
+        <div class="page-header-actions">
           <a href="#/rooms" class="btn btn-secondary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
               <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
@@ -34,11 +34,11 @@ export async function init(id) {
       </div>
     </div>
 
-    <div class="grid-3" style="gap:20px">
+    <div class="grid-3 room-detail-grid" style="gap:20px">
       <!-- Left: Info -->
       <div style="grid-column:span 1">
         <div class="card" style="margin-bottom:16px">
-          <div class="room-card-img" id="roomImg" style="height:180px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+          <div class="room-card-img" id="roomImg" style="height:180px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;background:linear-gradient(135deg, var(--color-primary) 0%, #b39ddb 100%)">
             <span style="font-size:60px;opacity:0.5" id="roomEmoji"></span>
           </div>
           <div class="card-body">
@@ -172,7 +172,7 @@ async function renderRoomSchedule(roomId, date) {
     const startMinutes = (h, m) => h * 60 + m;
 
     content.innerHTML = `
-      <div style="overflow-x:auto">
+      <div class="schedule-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <div style="display:grid;grid-template-columns:60px repeat(${slots.length},1fr);min-width:600px;gap:4px">
           <div></div>
           ${slots.map(s => {

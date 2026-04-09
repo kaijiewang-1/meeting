@@ -8,27 +8,31 @@ export default async function init() {
 
   App.setPageView(`
     <div class="page-header">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
+      <div class="page-header-toolbar bookings-my-header">
+        <div class="page-header-titles">
           <h1 class="page-title">我的预定</h1>
           <p class="page-subtitle">查看和管理您的所有会议预定</p>
         </div>
-        <a href="#/bookings/new" class="btn btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-          </svg>
-          新建预定
-        </a>
+        <div class="page-header-actions">
+          <a href="#/bookings/new" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            新建预约
+          </a>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom:20px">
-      <div class="tabs">
-        <button class="tab-item active" data-status="" onclick="BookingsMyPage.filter('')">全部</button>
-        <button class="tab-item" data-status="active" onclick="BookingsMyPage.filter('active')">待开始</button>
-        <button class="tab-item" data-status="FINISHED" onclick="BookingsMyPage.filter('FINISHED')">已结束</button>
-        <button class="tab-item" data-status="CANCELED" onclick="BookingsMyPage.filter('CANCELED')">已取消</button>
+    <div class="card bookings-my-card" style="margin-bottom:20px">
+      <div class="tabs-wrap tabs-wrap--scroll">
+        <div class="tabs tabs--bookings">
+        <button type="button" class="tab-item active" data-status="" onclick="BookingsMyPage.filter('')">全部</button>
+        <button type="button" class="tab-item" data-status="active" onclick="BookingsMyPage.filter('active')">待开始</button>
+        <button type="button" class="tab-item" data-status="FINISHED" onclick="BookingsMyPage.filter('FINISHED')">已结束</button>
+        <button type="button" class="tab-item" data-status="CANCELED" onclick="BookingsMyPage.filter('CANCELED')">已取消</button>
+        </div>
       </div>
       <div class="card-body" id="bookingsList">
         ${App.renderSkeleton('table', 5)}
@@ -39,7 +43,7 @@ export default async function init() {
   window.BookingsMyPage = {
     currentFilter: '',
     async filter(status) {
-      document.querySelectorAll('.tab-item').forEach(tab => {
+      document.querySelectorAll('.tabs--bookings .tab-item').forEach(tab => {
         tab.classList.toggle('active', tab.getAttribute('data-status') === status);
       });
       this.currentFilter = status;
@@ -47,7 +51,29 @@ export default async function init() {
     },
     async refresh() {
       await loadBookings(this.currentFilter);
-    }
+    },
+    async checkIn(id) {
+      try {
+        await api.checkIn(id);
+        Toast.success('签到成功');
+        await this.refresh();
+      } catch (e) {
+        Toast.error(e.message || '签到失败');
+      }
+    },
+    async cancel(id) {
+      if (!confirm('确定取消该预定？')) return;
+      try {
+        await api.cancelBooking(id);
+        Toast.success('已取消');
+        await this.refresh();
+      } catch (e) {
+        Toast.error(e.message || '取消失败');
+      }
+    },
+    rebook(roomId) {
+      router.navigate(`/bookings/new?roomId=${roomId}`);
+    },
   };
 
   await loadBookings('');
@@ -81,8 +107,8 @@ async function loadBookings(status) {
     }
 
     list.innerHTML = `
-      <div class="table-wrapper">
-        <table>
+      <div class="table-wrapper bookings-list-wrap">
+        <table class="bookings-my-table">
           <thead>
             <tr>
               <th>预定编号</th>
@@ -103,29 +129,29 @@ async function loadBookings(status) {
 
               return `
                 <tr>
-                  <td><code style="font-family:var(--font-mono);font-size:12px;background:var(--color-bg);padding:2px 6px;border-radius:4px">${utils.escapeHtml(b.bookingNo)}</code></td>
-                  <td>
+                  <td data-label="预定编号"><code style="font-family:var(--font-mono);font-size:12px;background:var(--color-bg);padding:2px 6px;border-radius:4px">${utils.escapeHtml(b.bookingNo)}</code></td>
+                  <td data-label="会议主题">
                     <div style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${utils.escapeHtml(b.subject)}">
                       ${utils.escapeHtml(b.subject)}
                     </div>
                     ${b.attendeeCount ? `<div style="font-size:12px;color:var(--color-text-tertiary)">${b.attendeeCount}人参会</div>` : ''}
                   </td>
-                  <td>
+                  <td data-label="会议室">
                     <div style="font-weight:500">${utils.escapeHtml(b.roomName)}</div>
                   </td>
-                  <td>
+                  <td data-label="时间">
                     <div style="font-size:13px">${utils.formatDate(b.startTime)}</div>
                     <div style="font-size:12px;color:var(--color-text-tertiary)">${utils.formatTime(b.startTime)} - ${utils.formatTime(b.endTime)}</div>
                   </td>
-                  <td><span class="tag ${utils.statusTag(b.status)}">${utils.statusLabel(b.status)}</span></td>
-                  <td>
+                  <td data-label="状态"><span class="tag ${utils.statusTag(b.status)}">${utils.statusLabel(b.status)}</span></td>
+                  <td data-label="签到">
                     ${b.status === 'BOOKED' && !canCheckIn ? `<span class="tag tag-neutral">待签到</span>` : ''}
                     ${b.checkInStatus === 'CHECKED_IN' || b.status === 'CHECKED_IN' ? `<span class="tag tag-success">已签到</span>` : ''}
                     ${b.status === 'FINISHED' ? `<span class="tag tag-neutral">已完成</span>` : ''}
                     ${b.status === 'CANCELED' ? `<span class="tag tag-danger">已取消</span>` : ''}
                   </td>
-                  <td>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <td class="actions-cell" data-label="操作">
+                    <div class="bookings-actions-row">
                       ${b.status === 'BOOKED' && canCheckIn ? `
                         <button class="btn btn-success btn-sm" onclick="BookingsMyPage.checkIn(${b.id})">签到</button>
                       ` : ''}

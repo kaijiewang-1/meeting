@@ -261,6 +261,35 @@
   margin-bottom: 24px;
 }
 
+/* 工作台顶栏：标题 + 新建预约（不依赖下方主卡片即可见） */
+.home-workbench-header {
+  margin-bottom: 20px;
+}
+
+.home-workbench-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.home-workbench-intro {
+  flex: 1;
+  min-width: min(100%, 200px);
+}
+
+.home-workbench-header-actions {
+  flex-shrink: 0;
+}
+
+.home-workbench-book-cta {
+  padding: 12px 22px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(139, 107, 201, 0.35);
+}
+
 .page-title {
   font-size: 24px;
   font-weight: 700;
@@ -271,6 +300,158 @@
 .page-subtitle {
   font-size: 14px;
   color: var(--color-text-secondary);
+}
+
+/* ─── 首页：新建预约主操作区 ─── */
+.home-booking-hero {
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ede4ff 0%, #f3edfc 38%, #e8ddfb 100%);
+  border: 1px solid rgba(139, 107, 201, 0.2);
+  box-shadow: 0 8px 32px rgba(92, 61, 138, 0.08), 0 2px 8px rgba(139, 107, 201, 0.06);
+}
+
+.home-booking-hero::before {
+  content: '';
+  position: absolute;
+  right: -12%;
+  top: -40%;
+  width: 52%;
+  height: 140%;
+  background: radial-gradient(ellipse, rgba(179, 157, 219, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.home-booking-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+}
+
+.home-booking-hero-text {
+  flex: 1;
+  min-width: min(100%, 240px);
+}
+
+.home-booking-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(139, 107, 201, 0.25);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  margin-bottom: 10px;
+}
+
+.home-booking-title {
+  font-size: clamp(1.35rem, 3vw, 1.65rem);
+  font-weight: 800;
+  color: var(--color-primary-dark);
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.home-booking-desc {
+  font-size: 14px;
+  color: #6b5b8c;
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.55;
+}
+
+.home-booking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+a.btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff !important;
+  text-decoration: none !important;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, var(--color-primary) 0%, #7a5ab8 100%);
+  border: none;
+  box-shadow: 0 4px 16px rgba(139, 107, 201, 0.45), 0 2px 4px rgba(92, 61, 138, 0.15);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+a.btn-hero-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(139, 107, 201, 0.5);
+  color: #fff !important;
+}
+
+a.btn-hero-primary:active {
+  transform: translateY(0);
+}
+
+.btn-hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-dark) !important;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(139, 107, 201, 0.35);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn-hero-secondary:hover {
+  background: #fff;
+  border-color: var(--color-primary);
+}
+
+.home-quick-section {
+  margin-bottom: 24px;
+}
+
+.home-quick-section .filter-bar {
+  border-color: rgba(139, 107, 201, 0.14);
+  background: linear-gradient(180deg, #ffffff 0%, #fcfafd 100%);
+}
+
+.home-quick-section .section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-quick-section .section-label::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-muted));
 }
 
 .page-actions {
@@ -396,6 +577,61 @@
 .tab-item.active {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);
+}
+
+/* 我的预定 — Tab 容器（窄屏下横向滑动） */
+.tabs-wrap--scroll {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabs.tabs--bookings {
+  margin: 0;
+}
+
+.bookings-actions-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* 日历 — 周导航与空白格「+」 */
+.calendar-week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calendar-nav-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  justify-content: center;
+}
+
+.calendar-this-week {
+  min-width: 72px;
+}
+
+.calendar-scroll-hint {
+  display: none;
+  font-size: 13px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(139, 107, 201, 0.22);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.calendar-scroll-hint strong {
+  font-weight: 700;
+}
+
+.cal-add-touch {
+  display: none;
 }
 
 /* Table */
@@ -525,7 +761,7 @@ tbody tr:last-child td {
 
 .login-visual {
   flex: 1;
-  background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 50%, #db2777 100%);
+  background: linear-gradient(135deg, #9d7dd8 0%, #b39ddb 42%, #ce93d8 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -619,7 +855,7 @@ tbody tr:last-child td {
 
 .room-card-img {
   height: 140px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #b39ddb 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -823,4 +1059,483 @@ tbody tr:last-child td {
 .chart-container {
   height: 280px;
   position: relative;
+}
+
+/* ─── 详情页顶栏（PC 横向 / 手机纵向） ─── */
+.page-header-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ─── 会议室详情：宽屏两列，窄屏堆叠 ─── */
+@media (max-width: 900px) {
+  .room-detail-grid > div {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* ─── 侧栏遮罩（仅移动端） ─── */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: var(--z-sidebar-backdrop);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-backdrop.is-visible {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ─── 底部导航（移动端预约用户） ─── */
+.app-bottom-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding: 0 4px env(safe-area-inset-bottom, 0px);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+  z-index: var(--z-bottom-nav);
+  align-items: stretch;
+  justify-content: space-around;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.bottom-nav-item svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.bottom-nav-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bottom-nav-item.active {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.bottom-nav-item.active svg {
+  opacity: 1;
+  stroke-width: 2.25;
+}
+
+/* ─── 管理端：手机顶栏提示（仅管理员布局） ─── */
+.admin-mobile-hint {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #92400e;
+  background: linear-gradient(90deg, #fef3c7, #fffbeb);
+  border-bottom: 1px solid #fcd34d;
+}
+
+.admin-mobile-hint svg {
+  flex-shrink: 0;
+  color: #b45309;
+}
+
+.admin-mobile-hint strong {
+  font-weight: 700;
+}
+
+/* ─── 移动端布局总控 ─── */
+@media (max-width: 768px) {
+  .app-sidebar {
+    width: min(300px, 88vw);
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+    z-index: 135;
+  }
+
+  .sidebar-backdrop.is-visible {
+    z-index: 134;
+  }
+
+  .app-main {
+    margin-left: 0;
+    min-height: 100dvh;
+    min-height: 100vh;
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.route-admin-mobile .app-main {
+    padding-bottom: 0;
+  }
+
+  .app-bottom-nav {
+    display: flex;
+  }
+
+  body.route-admin-mobile .app-bottom-nav {
+    display: none;
+  }
+
+  .app-content {
+    padding: 16px 14px 24px;
+    max-width: 100%;
+  }
+
+  .app-header {
+    padding: 0 12px 0 8px;
+    height: auto;
+    min-height: var(--header-height);
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: max(0px, env(safe-area-inset-top, 0px));
+  }
+
+  .header-breadcrumb {
+    font-size: 13px;
+    max-width: min(100%, calc(100vw - 120px));
+    overflow: hidden;
+    flex-wrap: wrap;
+  }
+
+  .header-breadcrumb a,
+  .header-breadcrumb span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .header-icon-btn {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: clamp(1.25rem, 4.5vw, 1.5rem);
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+  }
+
+  .page-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header-actions {
+    width: 100%;
+  }
+
+  .page-header-actions .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .home-booking-hero-inner {
+    padding: 20px 18px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-booking-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  a.btn-hero-primary,
+  .btn-hero-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .home-workbench-header-actions {
+    width: 100%;
+  }
+
+  .home-workbench-book-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .room-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .room-card:hover {
+    transform: none;
+  }
+
+  .nav-item {
+    min-height: 48px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .stat-card-value {
+    font-size: 24px;
+  }
+
+  .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+
+  .timeline-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .calendar-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -14px;
+    padding: 0 14px 8px;
+  }
+
+  .calendar-header,
+  .calendar-row {
+    min-width: 560px;
+  }
+
+  .table-wrapper {
+    margin: 0 -14px;
+    padding: 0 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .calendar-toolbar-actions .form-select {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    max-width: 100%;
+  }
+
+  .calendar-scroll-hint {
+    display: block;
+  }
+
+  .calendar-week-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendar-week-nav .calendar-this-week {
+    flex: 1;
+    text-align: center;
+    min-height: 44px;
+  }
+
+  .calendar-foot-note {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .cal-cell-empty {
+    min-height: 44px !important;
+  }
+
+  .cal-add-desktop {
+    display: none !important;
+  }
+
+  .cal-add-touch {
+    display: inline !important;
+  }
+
+  .calendar-grid-root {
+    min-width: 720px;
+  }
+
+  /* 我的预定 — Tab 横向滑动 */
+  .tabs-wrap--scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    padding: 0 12px 2px;
+    scrollbar-width: thin;
+  }
+
+  .tabs.tabs--bookings {
+    flex-wrap: nowrap;
+    width: max-content;
+    min-width: 100%;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .tabs.tabs--bookings .tab-item {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bookings-my-card .card-body {
+    padding: 12px;
+  }
+
+  .bookings-list-wrap.table-wrapper {
+    margin: 0;
+    padding: 0;
+    overflow-x: visible;
+  }
+
+  .bookings-list-wrap .bookings-my-table {
+    min-width: 0 !important;
+    width: 100%;
+    display: block;
+  }
+
+  .bookings-list-wrap .bookings-my-table thead {
+    display: none;
+  }
+
+  .bookings-list-wrap .bookings-my-table tbody {
+    display: block;
+  }
+
+  .bookings-list-wrap .bookings-my-table tbody tr {
+    display: block;
+    margin-bottom: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 4px 14px 12px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .bookings-list-wrap .bookings-my-table tbody tr:hover {
+    background: var(--color-surface);
+  }
+
+  .bookings-list-wrap .bookings-my-table td {
+    display: block;
+    width: 100% !important;
+    padding: 12px 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--color-border-light) !important;
+    text-align: left !important;
+    vertical-align: top !important;
+  }
+
+  .bookings-list-wrap .bookings-my-table td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 4px !important;
+  }
+
+  .bookings-list-wrap .bookings-my-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--color-text-tertiary);
+    margin-bottom: 6px;
+  }
+
+  .bookings-list-wrap .bookings-my-table .bookings-actions-row {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .bookings-list-wrap .bookings-my-table .bookings-actions-row .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .bookings-list-wrap .bookings-my-table td [style*="max-width:200px"] {
+    max-width: 100% !important;
+    white-space: normal !important;
+  }
+
+  table:not(.bookings-my-table) {
+    min-width: 640px;
+  }
+
+  .app-layout--admin .admin-mobile-hint {
+    display: flex;
+  }
+}
+
+@media (min-width: 769px) {
+  .sidebar-backdrop {
+    display: none !important;
+    pointer-events: none !important;
+  }
 }
