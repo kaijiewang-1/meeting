@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta
 from database import get_db
 from config import Config
+from services import room_service
 
 
 # ─── 冲突检测 ────────────────────────────────────────────────
@@ -13,15 +14,15 @@ def check_conflict(room_id, start_time, end_time, exclude_booking_id=None):
     """检查时间冲突（原子操作，加锁保证并发安全）"""
     conn = get_db()
     cursor = conn.cursor()
-    sql = '''
+    ph = ','.join('?' * len(Config.OCCUPYING_BOOKING_STATUSES))
+    sql = f'''
         SELECT id FROM bookings
         WHERE room_id = ?
-          AND status IN (?, ?, ?)
+          AND status IN ({ph})
           AND start_time < ?
           AND end_time > ?
     '''
-    params = [room_id, Config.BOOKING_STATUS_BOOKED, Config.BOOKING_STATUS_CHECKED_IN,
-              Config.BOOKING_STATUS_IN_USE, end_time, start_time]
+    params = [room_id, *Config.OCCUPYING_BOOKING_STATUSES, end_time, start_time]
     if exclude_booking_id:
         sql += ' AND id != ?'
         params.append(exclude_booking_id)
@@ -150,6 +151,18 @@ def create_booking(organizer_id, data):
     if not valid:
         return None, err_code, err_msg
 
+    organizer = _get_user(organizer_id)
+    room_row = _get_room(room_id)
+    if not organizer or not room_row:
+        return None, 40401, '用户或会议室不存在'
+    if not room_service.user_may_access_room(organizer, room_row):
+        return None, 40301, '无权预定该会议室'
+
+    req_appr = int(room_row.get('requires_approval') or 0)
+    initial_status = (
+        Config.BOOKING_STATUS_PENDING_APPROVAL if req_appr else Config.BOOKING_STATUS_BOOKED
+    )
+
     # 生成预定编号
     booking_no = f"BK{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
 
@@ -162,7 +175,7 @@ def create_booking(organizer_id, data):
              attendee_count, status, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (booking_no, subject, organizer_id, room_id, start_time, end_time,
-              attendee_count, Config.BOOKING_STATUS_BOOKED, remark))
+              attendee_count, initial_status, remark))
         booking_id = cursor.lastrowid
         conn.commit()
     finally:
@@ -207,7 +220,7 @@ def get_my_bookings(organizer_id, status_filter=None):
     params = [organizer_id]
 
     if status_filter == 'active':
-        sql += " AND b.status IN ('BOOKED', 'CHECKED_IN', 'IN_USE')"
+        sql += " AND b.status IN ('PENDING_APPROVAL', 'BOOKED', 'CHECKED_IN', 'IN_USE')"
     elif status_filter:
         sql += ' AND b.status = ?'
         params.append(status_filter)
@@ -269,18 +282,17 @@ def get_all_bookings(filters=None):
     return bookings
 
 
-def cancel_booking(booking_id, user_id, is_admin=False):
-    """取消预定"""
+def cancel_booking(booking_id, user_id):
+    """取消预定（仅预定人本人可操作）"""
     booking = get_booking_by_id(booking_id)
     if not booking:
         return None, 40401, '预定记录不存在'
 
-    # 权限检查
-    if not is_admin and booking['organizer_id'] != user_id:
+    if booking['organizer_id'] != user_id:
         return None, 40301, '无权取消他人的预定'
 
     # 状态检查
-    if booking['status'] in ['CANCELED', 'FINISHED', 'EXPIRED']:
+    if booking['status'] in ['CANCELED', 'FINISHED', 'EXPIRED', 'REJECTED']:
         return None, 40001, f'当前状态（{booking["status"]}）不允许取消'
 
     conn = get_db()
@@ -332,7 +344,75 @@ def _get_room(room_id):
     cursor.execute('SELECT * FROM rooms WHERE id = ?', (room_id,))
     row = cursor.fetchone()
     conn.close()
-    return dict(row) if row else None
+    if not row:
+        return None
+    return dict(row)
+
+
+def _get_user(user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, username, name, email, college_code, role, status FROM users WHERE id = ?',
+        (user_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    u = dict(row)
+    u['college_code'] = u.get('college_code') or ''
+    return u
+
+
+def approve_booking(booking_id, admin_id):
+    """管理员通过待审批预定"""
+    booking = get_booking_by_id(booking_id)
+    if not booking:
+        return None, 40401, '预定记录不存在'
+    if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
+        return None, 40001, '该预定不在待审批状态'
+
+    if check_conflict(
+        booking['room_id'], booking['start_time'], booking['end_time'], exclude_booking_id=booking_id
+    ):
+        return None, 40901, '该时段已有其他有效预定，无法通过审批'
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE bookings
+        SET status = ?, approval_remark = NULL, updated_at = datetime('now')
+        WHERE id = ?
+    ''', (Config.BOOKING_STATUS_BOOKED, booking_id))
+    conn.commit()
+    conn.close()
+
+    _log_operation(admin_id, 'APPROVE_BOOKING', 'booking', booking_id, f'通过预定 {booking["booking_no"]}')
+    return get_booking_by_id(booking_id), 0, '审批通过'
+
+
+def reject_booking(booking_id, admin_id, reason=''):
+    """管理员拒绝待审批预定"""
+    booking = get_booking_by_id(booking_id)
+    if not booking:
+        return None, 40401, '预定记录不存在'
+    if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
+        return None, 40001, '该预定不在待审批状态'
+
+    remark = (reason or '').strip()[:500]
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE bookings
+        SET status = ?, approval_remark = ?, updated_at = datetime('now')
+        WHERE id = ?
+    ''', (Config.BOOKING_STATUS_REJECTED, remark or None, booking_id))
+    conn.commit()
+    conn.close()
+
+    _log_operation(admin_id, 'REJECT_BOOKING', 'booking', booking_id, f'拒绝预定 {booking["booking_no"]}')
+    return get_booking_by_id(booking_id), 0, '已拒绝'
 
 
 def _log_operation(operator_id, action, target_type, target_id, detail):

@@ -5,6 +5,14 @@ from datetime import datetime, timedelta
 from database import get_db
 from config import Config
 
+# 统计口径：不含已取消、已过期、待审批、已驳回
+_STATS_EXCLUDED = (
+    Config.BOOKING_STATUS_CANCELED,
+    Config.BOOKING_STATUS_EXPIRED,
+    Config.BOOKING_STATUS_PENDING_APPROVAL,
+    Config.BOOKING_STATUS_REJECTED,
+)
+
 
 def get_stats():
     """获取首页统计数据"""
@@ -21,22 +29,22 @@ def get_stats():
     available_rooms = cursor.fetchone()[0]
 
     # 今日预定数
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT COUNT(*) FROM bookings
-        WHERE DATE(start_time) = ? AND status NOT IN (?, ?)
-    ''', (today, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+        WHERE DATE(start_time) = ? AND status NOT IN ({','.join('?' * len(_STATS_EXCLUDED))})
+    ''', (today, *_STATS_EXCLUDED))
     today_bookings = cursor.fetchone()[0]
 
     # 计算今日利用率（简化版：假设营业 14 小时，总槽位数 = 会议室数 * 14 * 2，即 30 分钟槽）
     cursor.execute("SELECT COUNT(*) FROM rooms")
     room_count = cursor.fetchone()[0]
     # 今日已用槽
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT COALESCE(SUM(
             (julianday(end_time) - julianday(start_time)) * 24 * 2
         ), 0) FROM bookings
-        WHERE DATE(start_time) = ? AND status NOT IN (?, ?)
-    ''', (today, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+        WHERE DATE(start_time) = ? AND status NOT IN ({','.join('?' * len(_STATS_EXCLUDED))})
+    ''', (today, *_STATS_EXCLUDED))
     used_slots = cursor.fetchone()[0] or 0
     total_slots = room_count * 14 * 2
     utilization_rate = round(used_slots / total_slots * 100, 1) if total_slots > 0 else 0
@@ -61,20 +69,20 @@ def get_weekly_stats():
         date_str = day.strftime('%Y-%m-%d')
         day_name = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][day.weekday()]
 
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT COUNT(*) FROM bookings
-            WHERE DATE(start_time) = ? AND status NOT IN (?, ?)
-        ''', (date_str, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+            WHERE DATE(start_time) = ? AND status NOT IN ({','.join('?' * len(_STATS_EXCLUDED))})
+        ''', (date_str, *_STATS_EXCLUDED))
         bookings_count = cursor.fetchone()[0]
 
         # 利用率
         cursor.execute("SELECT COUNT(*) FROM rooms")
         room_count = cursor.fetchone()[0] or 1
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT COALESCE(SUM((julianday(end_time) - julianday(start_time)) * 24 * 2), 0)
             FROM bookings
-            WHERE DATE(start_time) = ? AND status NOT IN (?, ?)
-        ''', (date_str, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+            WHERE DATE(start_time) = ? AND status NOT IN ({','.join('?' * len(_STATS_EXCLUDED))})
+        ''', (date_str, *_STATS_EXCLUDED))
         used = cursor.fetchone()[0] or 0
         util = round(used / (room_count * 14 * 2) * 100, 1) if room_count > 0 else 0
 
@@ -92,15 +100,16 @@ def get_building_stats():
     """按楼宇统计"""
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('''
+    ph = ','.join('?' * len(_STATS_EXCLUDED))
+    cursor.execute(f'''
         SELECT r.building,
                COUNT(b.id) as bookings,
                COALESCE(SUM((julianday(b.end_time) - julianday(b.start_time)) * 24 * 2), 0) as used_slots
         FROM rooms r
         LEFT JOIN bookings b ON r.id = b.room_id
-          AND b.status NOT IN (?, ?)
+          AND b.status NOT IN ({ph})
         GROUP BY r.building
-    ''', (Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+    ''', _STATS_EXCLUDED)
 
     rows = cursor.fetchall()
     conn.close()
@@ -128,17 +137,18 @@ def get_room_usage_ranking():
     today = datetime.now().strftime('%Y-%m-%d')
     week_ago = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
 
-    cursor.execute('''
+    ph = ','.join('?' * len(_STATS_EXCLUDED))
+    cursor.execute(f'''
         SELECT r.id, r.name, r.building, r.floor, r.capacity, r.status,
                COUNT(b.id) as bookings,
                COALESCE(SUM((julianday(b.end_time) - julianday(b.start_time)) * 24), 0) as hours
         FROM rooms r
         LEFT JOIN bookings b ON r.id = b.room_id
-          AND b.status NOT IN (?, ?)
+          AND b.status NOT IN ({ph})
           AND DATE(b.start_time) >= ?
         GROUP BY r.id
         ORDER BY bookings DESC
-    ''', (Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED, week_ago))
+    ''', (*_STATS_EXCLUDED, week_ago))
 
     rows = cursor.fetchall()
     conn.close()

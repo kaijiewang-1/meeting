@@ -25,7 +25,12 @@ def create_booking():
     if not booking:
         return jsonify({'code': err_code, 'message': err_msg, 'data': None}), 200
 
-    return jsonify({'code': 0, 'message': '预定成功', 'data': booking}), 200
+    msg = (
+        '已提交审批，请等待管理员确认'
+        if booking.get('status') == 'PENDING_APPROVAL'
+        else '预定成功'
+    )
+    return jsonify({'code': 0, 'message': msg, 'data': booking}), 200
 
 
 @bookings_bp.route('/bookings/my', methods=['GET'])
@@ -43,8 +48,7 @@ def get_my_bookings():
 def cancel_booking(booking_id):
     """取消预定"""
     user_id = g.current_user['id']
-    is_admin = g.current_user['role'] == 'ADMIN'
-    booking, err_code, err_msg = booking_service.cancel_booking(booking_id, user_id, is_admin)
+    booking, err_code, err_msg = booking_service.cancel_booking(booking_id, user_id)
     if not booking:
         return jsonify({'code': err_code, 'message': err_msg, 'data': None}), 200
     return jsonify({'code': 0, 'message': '已取消预定', 'data': booking}), 200

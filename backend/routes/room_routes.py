@@ -21,7 +21,7 @@ def get_available():
         'floor': request.args.get('floor'),
         'facilities': request.args.getlist('facilities') or None,
     }
-    rooms = room_service.get_available_rooms(filters)
+    rooms = room_service.get_available_rooms(filters, for_user=g.current_user)
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 
@@ -40,7 +40,10 @@ def get_rooms():
         'end': request.args.get('endTime'),
         'facilities': facilities if facilities else None,
     }
-    rooms = room_service.get_all_rooms({k: v for k, v in filters.items() if v is not None and v != ''})
+    rooms = room_service.get_all_rooms(
+        {k: v for k, v in filters.items() if v is not None and v != ''},
+        for_user=g.current_user,
+    )
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 
@@ -48,7 +51,7 @@ def get_rooms():
 @require_auth
 def get_room(room_id):
     """获取会议室详情"""
-    room = room_service.get_room_by_id(room_id)
+    room = room_service.get_room_by_id(room_id, for_user=g.current_user)
     if not room:
         return jsonify({'code': 40401, 'message': '会议室不存在', 'data': None}), 200
     return jsonify({'code': 0, 'message': 'success', 'data': room}), 200
@@ -62,5 +65,8 @@ def get_schedule(room_id):
     if not date:
         from datetime import date as dt
         date = dt.today().isoformat()
+    room = room_service.get_room_by_id(room_id, for_user=g.current_user)
+    if not room:
+        return jsonify({'code': 40401, 'message': '会议室不存在', 'data': None}), 200
     bookings = room_service.get_room_schedule(room_id, date)
     return jsonify({'code': 0, 'message': 'success', 'data': bookings}), 200

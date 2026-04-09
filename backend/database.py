@@ -26,6 +26,7 @@ def init_db():
             password_hash VARCHAR(200) NOT NULL,
             name VARCHAR(100) NOT NULL,
             email VARCHAR(100),
+            college_code VARCHAR(50) NOT NULL DEFAULT '',
             role VARCHAR(20) NOT NULL DEFAULT 'USER',
             status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
@@ -45,6 +46,8 @@ def init_db():
             description VARCHAR(500),
             open_hours VARCHAR(50) DEFAULT '08:00-22:00',
             image VARCHAR(20) DEFAULT '🏢',
+            requires_approval INTEGER NOT NULL DEFAULT 0,
+            visibility_scope VARCHAR(20) NOT NULL DEFAULT 'ALL',
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
             updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
         )
@@ -87,6 +90,7 @@ def init_db():
             attendee_count INTEGER NOT NULL DEFAULT 1,
             status VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
             remark VARCHAR(500),
+            approval_remark VARCHAR(500),
             canceled_at DATETIME,
             finished_at DATETIME,
             version INTEGER NOT NULL DEFAULT 0,
@@ -94,6 +98,17 @@ def init_db():
             updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (organizer_id) REFERENCES users(id),
             FOREIGN KEY (room_id) REFERENCES rooms(id)
+        )
+    ''')
+
+    # 会议室可见学院（visibility_scope=COLLEGES 时生效）
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS room_visible_colleges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            room_id INTEGER NOT NULL,
+            college_code VARCHAR(50) NOT NULL,
+            FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+            UNIQUE(room_id, college_code)
         )
     ''')
 
@@ -133,10 +148,61 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_bookings_no ON bookings(booking_no)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_room_facilities_room ON room_facilities(room_id)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_maintenance_room ON room_maintenance(room_id, start_time, end_time)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_room_visible_colleges_room ON room_visible_colleges(room_id)')
 
+    migrate_schema(cursor)
     conn.commit()
     conn.close()
     print("[DB] 数据库初始化完成")
+
+
+def _table_columns(cursor, table):
+    cursor.execute(f'PRAGMA table_info({table})')
+    return {row[1] for row in cursor.fetchall()}
+
+
+def migrate_schema(cursor):
+    """为已有 SQLite 库补充列与表"""
+    cols = _table_columns(cursor, 'users')
+    if 'college_code' not in cols:
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN college_code VARCHAR(50) NOT NULL DEFAULT ''"
+        )
+    cursor.execute(
+        "UPDATE users SET college_code = 'CS' WHERE username = 'user' AND IFNULL(college_code, '') = ''"
+    )
+    cursor.execute(
+        "UPDATE users SET college_code = 'EE' WHERE username = 'lihua' AND IFNULL(college_code, '') = ''"
+    )
+
+    cols = _table_columns(cursor, 'rooms')
+    if 'requires_approval' not in cols:
+        cursor.execute(
+            "ALTER TABLE rooms ADD COLUMN requires_approval INTEGER NOT NULL DEFAULT 0"
+        )
+    if 'visibility_scope' not in cols:
+        cursor.execute(
+            "ALTER TABLE rooms ADD COLUMN visibility_scope VARCHAR(20) NOT NULL DEFAULT 'ALL'"
+        )
+
+    cols = _table_columns(cursor, 'bookings')
+    if 'approval_remark' not in cols:
+        cursor.execute(
+            "ALTER TABLE bookings ADD COLUMN approval_remark VARCHAR(500)"
+        )
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS room_visible_colleges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            room_id INTEGER NOT NULL,
+            college_code VARCHAR(50) NOT NULL,
+            FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+            UNIQUE(room_id, college_code)
+        )
+    ''')
+    cursor.execute(
+        'CREATE INDEX IF NOT EXISTS idx_room_visible_colleges_room ON room_visible_colleges(room_id)'
+    )
 
 
 def seed_data():
@@ -153,54 +219,62 @@ def seed_data():
     # 插入默认管理员
     from werkzeug.security import generate_password_hash
     cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('admin', generate_password_hash('123456'), '系统管理员', 'admin@company.com', 'ADMIN'))
+        INSERT INTO users (username, password_hash, name, email, role, college_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('admin', generate_password_hash('123456'), '系统管理员', 'admin@company.com', 'ADMIN', ''))
 
-    # 插入普通用户
+    # 插入普通用户（学院代码用于会议室可见性筛选演示：CS / EE）
     cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('user', generate_password_hash('123456'), '张明', 'user@company.com', 'USER'))
+        INSERT INTO users (username, password_hash, name, email, role, college_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('user', generate_password_hash('123456'), '张明', 'user@company.com', 'USER', 'CS'))
 
     cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('lihua', generate_password_hash('123456'), '李华', 'lihua@company.com', 'USER'))
+        INSERT INTO users (username, password_hash, name, email, role, college_code)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('lihua', generate_password_hash('123456'), '李华', 'lihua@company.com', 'USER', 'EE'))
 
-    # 插入会议室
+    # 插入会议室：requires_approval、visibility_scope、可见学院列表（None 表示不限学院）
     rooms_data = [
-        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '🌟'),
-        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', '中型会议室，适合部门会议和讨论', '08:00-22:00', '🌊'),
-        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '🌲'),
-        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '☁️'),
-        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '💡'),
-        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', '中型会议室，配备现代化会议设备', '08:00-22:00', '🚀'),
-        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', '小型会客室，温馨舒适', '08:00-22:00', '☀️'),
-        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', '小型独立空间，适合一对一沟通', '08:00-22:00', '🌙'),
+        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '🌟', 0, 'COLLEGES', ['CS']),
+        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', '中型会议室，适合部门会议和讨论', '08:00-22:00', '🌊', 1, 'ALL', None),
+        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '🌲', 0, 'ALL', None),
+        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '☁️', 0, 'ALL', None),
+        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '💡', 0, 'ALL', None),
+        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', '中型会议室，配备现代化会议设备', '08:00-22:00', '🚀', 0, 'ALL', None),
+        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', '小型会客室，温馨舒适', '08:00-22:00', '☀️', 0, 'ALL', None),
+        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', '小型独立空间，适合一对一沟通', '08:00-22:00', '🌙', 0, 'ALL', None),
     ]
 
     for room in rooms_data:
+        name, building, floor, capacity, status, description, open_hours, image, req_appr, vis_scope, colleges = room
         cursor.execute('''
-            INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', room)
+            INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image,
+                               requires_approval, visibility_scope)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (name, building, floor, capacity, status, description, open_hours, image, req_appr, vis_scope))
         room_id = cursor.lastrowid
+        if colleges:
+            for cc in colleges:
+                cursor.execute(
+                    'INSERT INTO room_visible_colleges (room_id, college_code) VALUES (?, ?)',
+                    (room_id, cc),
+                )
 
         # 为每个会议室添加设备
-        if room[0] == '星辰厅':
+        if name == '星辰厅':
             facilities = ['projector', 'whiteboard', 'video_conf', 'tv']
-        elif room[0] == '海洋厅':
+        elif name == '海洋厅':
             facilities = ['projector', 'whiteboard', 'tv']
-        elif room[0] == '森林厅':
+        elif name == '森林厅':
             facilities = ['whiteboard', 'tv']
-        elif room[0] == '云端阁':
+        elif name == '云端阁':
             facilities = ['projector', 'video_conf', 'whiteboard', 'tv', 'audio']
-        elif room[0] == '创意坊':
+        elif name == '创意坊':
             facilities = ['whiteboard', 'tv']
-        elif room[0] == '未来厅':
+        elif name == '未来厅':
             facilities = ['projector', 'video_conf', 'whiteboard']
-        elif room[0] == '阳光房':
+        elif name == '阳光房':
             facilities = ['tv']
         else:
             facilities = []

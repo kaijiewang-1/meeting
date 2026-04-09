@@ -5,7 +5,49 @@ from database import get_db
 from config import Config
 
 
-def get_all_rooms(filters=None):
+def get_visible_college_codes(room_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT college_code FROM room_visible_colleges WHERE room_id = ? ORDER BY college_code',
+        (room_id,),
+    )
+    rows = [r[0] for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def user_may_access_room(user, room_dict):
+    """普通用户是否可见/可预定该会议室；admin 或未登录校验由调用方处理。"""
+    if not user or not room_dict:
+        return False
+    if user.get('role') == 'ADMIN':
+        return True
+    scope = (room_dict.get('visibility_scope') or Config.ROOM_VISIBILITY_ALL).upper()
+    if scope != Config.ROOM_VISIBILITY_COLLEGES:
+        return True
+    codes = room_dict.get('visible_colleges')
+    if codes is None:
+        codes = get_visible_college_codes(room_dict['id'])
+    if not codes:
+        return False
+    cc = (user.get('college_code') or '').strip()
+    if not cc:
+        return False
+    return cc in codes
+
+
+def _enrich_room(row_dict):
+    r = dict(row_dict)
+    scope = (r.get('visibility_scope') or Config.ROOM_VISIBILITY_ALL).upper()
+    if scope == Config.ROOM_VISIBILITY_COLLEGES:
+        r['visible_colleges'] = get_visible_college_codes(r['id'])
+    else:
+        r['visible_colleges'] = []
+    return r
+
+
+def get_all_rooms(filters=None, for_user=None):
     """获取所有会议室（支持筛选）"""
     conn = get_db()
     cursor = conn.cursor()
@@ -43,11 +85,14 @@ def get_all_rooms(filters=None):
 
     rooms = []
     for row in rows:
-        r = dict(row)
+        r = _enrich_room(row)
         r['facilities'] = r['facilities'].split(',') if r['facilities'] else []
         if r['facilities'] == ['']:
             r['facilities'] = []
         rooms.append(r)
+
+    if for_user is not None and for_user.get('role') != 'ADMIN':
+        rooms = [r for r in rooms if user_may_access_room(for_user, r)]
 
     if filters and filters.get('date') and filters.get('start') and filters.get('end'):
         slot = []
@@ -62,8 +107,8 @@ def get_all_rooms(filters=None):
     return rooms
 
 
-def get_room_by_id(room_id):
-    """获取单个会议室详情"""
+def get_room_by_id(room_id, for_user=None):
+    """获取单个会议室详情；for_user 非管理员时按学院可见性过滤，无权限返回 None。"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -78,12 +123,14 @@ def get_room_by_id(room_id):
 
     if not row:
         return None
-    r = dict(row)
+    r = _enrich_room(row)
     r['facilities'] = r['facilities'].split(',') if r['facilities'] and r['facilities'] != '' else []
+    if for_user is not None and not user_may_access_room(for_user, r):
+        return None
     return r
 
 
-def get_available_rooms(filters=None):
+def get_available_rooms(filters=None, for_user=None):
     """获取可用会议室（排除冲突和维护）"""
     conn = get_db()
     cursor = conn.cursor()
@@ -121,10 +168,14 @@ def get_available_rooms(filters=None):
     # 排除有时间冲突的会议室
     available = []
     for row in rows:
-        r = dict(row)
+        r = _enrich_room(row)
         r['facilities'] = r['facilities'].split(',') if r['facilities'] and r['facilities'] != '' else []
         if r['facilities'] == ['']:
             r['facilities'] = []
+
+        if for_user is not None and for_user.get('role') != 'ADMIN':
+            if not user_may_access_room(for_user, r):
+                continue
 
         if filters and filters.get('date') and filters.get('start') and filters.get('end'):
             if is_room_conflicted(room_id=r['id'], start=filters['start'], end=filters['end'], date=filters['date']):
@@ -144,15 +195,15 @@ def is_room_conflicted(room_id, date, start, end):
     cursor = conn.cursor()
     start_dt = f'{date}T{start}:00'
     end_dt = f'{date}T{end}:00'
-    cursor.execute('''
+    ph = ','.join('?' * len(Config.OCCUPYING_BOOKING_STATUSES))
+    cursor.execute(f'''
         SELECT id FROM bookings
         WHERE room_id = ?
-          AND status IN (?, ?, ?)
+          AND status IN ({ph})
           AND start_time < ?
           AND end_time > ?
         LIMIT 1
-    ''', (room_id, Config.BOOKING_STATUS_BOOKED, Config.BOOKING_STATUS_CHECKED_IN,
-          Config.BOOKING_STATUS_IN_USE, end_dt, start_dt))
+    ''', (room_id, *Config.OCCUPYING_BOOKING_STATUSES, end_dt, start_dt))
     conflict = cursor.fetchone()
     conn.close()
     return conflict is not None
@@ -186,9 +237,10 @@ def get_room_schedule(room_id, date):
         LEFT JOIN users u ON b.organizer_id = u.id
         WHERE b.room_id = ?
           AND DATE(b.start_time) = ?
-          AND b.status NOT IN (?, ?)
+          AND b.status NOT IN (?, ?, ?)
         ORDER BY b.start_time
-    ''', (room_id, date, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED))
+    ''', (room_id, date, Config.BOOKING_STATUS_CANCELED, Config.BOOKING_STATUS_EXPIRED,
+          Config.BOOKING_STATUS_REJECTED))
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -198,14 +250,19 @@ def create_room(data):
     """创建会议室"""
     conn = get_db()
     cursor = conn.cursor()
+    req_appr = 1 if int(data.get('requires_approval') or 0) else 0
+    vis_scope = data.get('visibility_scope') or data.get('visibilityScope') or Config.ROOM_VISIBILITY_ALL
+    if vis_scope not in (Config.ROOM_VISIBILITY_ALL, Config.ROOM_VISIBILITY_COLLEGES):
+        vis_scope = Config.ROOM_VISIBILITY_ALL
     cursor.execute('''
-        INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image,
+                           requires_approval, visibility_scope)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data['name'], data['building'], data['floor'],
         int(data['capacity']), data.get('status', 'AVAILABLE'),
         data.get('description', ''), data.get('open_hours', '08:00-22:00'),
-        data.get('image', '🏢')
+        data.get('image', '🏢'), req_appr, vis_scope,
     ))
     room_id = cursor.lastrowid
 
@@ -213,6 +270,16 @@ def create_room(data):
     facilities = data.get('facilities', [])
     for fac in facilities:
         cursor.execute('INSERT INTO room_facilities (room_id, facility_code) VALUES (?, ?)', (room_id, fac))
+
+    vcols = data.get('visible_colleges') or data.get('visibleColleges')
+    if vis_scope == Config.ROOM_VISIBILITY_COLLEGES and vcols:
+        for cc in vcols:
+            code = (cc or '').strip()
+            if code:
+                cursor.execute(
+                    'INSERT OR IGNORE INTO room_visible_colleges (room_id, college_code) VALUES (?, ?)',
+                    (room_id, code),
+                )
 
     conn.commit()
     conn.close()
@@ -230,6 +297,19 @@ def update_room(room_id, data):
         if field in data:
             updates.append(f'{field} = ?')
             params.append(data[field])
+    if 'requires_approval' in data:
+        updates.append('requires_approval = ?')
+        params.append(1 if int(data['requires_approval']) else 0)
+    if 'requiresApproval' in data:
+        updates.append('requires_approval = ?')
+        params.append(1 if int(data['requiresApproval']) else 0)
+    if 'visibility_scope' in data or 'visibilityScope' in data:
+        vs = data.get('visibility_scope') or data.get('visibilityScope')
+        if vs in (Config.ROOM_VISIBILITY_ALL, Config.ROOM_VISIBILITY_COLLEGES):
+            updates.append('visibility_scope = ?')
+            params.append(vs)
+            if vs == Config.ROOM_VISIBILITY_ALL:
+                cursor.execute('DELETE FROM room_visible_colleges WHERE room_id = ?', (room_id,))
 
     if updates:
         updates.append('updated_at = datetime("now")')
@@ -241,6 +321,18 @@ def update_room(room_id, data):
         cursor.execute('DELETE FROM room_facilities WHERE room_id = ?', (room_id,))
         for fac in data['facilities']:
             cursor.execute('INSERT INTO room_facilities (room_id, facility_code) VALUES (?, ?)', (room_id, fac))
+
+    if 'visible_colleges' in data or 'visibleColleges' in data:
+        vcols = data.get('visible_colleges') if 'visible_colleges' in data else data.get('visibleColleges')
+        cursor.execute('DELETE FROM room_visible_colleges WHERE room_id = ?', (room_id,))
+        if vcols:
+            for cc in vcols:
+                code = (cc or '').strip()
+                if code:
+                    cursor.execute(
+                        'INSERT OR IGNORE INTO room_visible_colleges (room_id, college_code) VALUES (?, ?)',
+                        (room_id, code),
+                    )
 
     conn.commit()
     conn.close()

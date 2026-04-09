@@ -68,15 +68,28 @@ def admin_get_bookings():
     return jsonify({'code': 0, 'message': 'success', 'data': bookings, 'total': len(bookings)}), 200
 
 
-@admin_bp.route('/bookings/<int:booking_id>/cancel', methods=['POST'])
+@admin_bp.route('/bookings/<int:booking_id>/approve', methods=['POST'])
 @require_admin
-def admin_cancel_booking(booking_id):
-    """管理员取消预定"""
-    user_id = g.current_user['id']
-    booking, err_code, err_msg = booking_service.cancel_booking(booking_id, user_id, is_admin=True)
+def admin_approve_booking(booking_id):
+    """管理员通过待审批预定"""
+    admin_id = g.current_user['id']
+    booking, err_code, err_msg = booking_service.approve_booking(booking_id, admin_id)
     if not booking:
         return jsonify({'code': err_code, 'message': err_msg, 'data': None}), 200
-    return jsonify({'code': 0, 'message': '已取消预定', 'data': booking}), 200
+    return jsonify({'code': 0, 'message': err_msg, 'data': booking}), 200
+
+
+@admin_bp.route('/bookings/<int:booking_id>/reject', methods=['POST'])
+@require_admin
+def admin_reject_booking(booking_id):
+    """管理员拒绝待审批预定"""
+    admin_id = g.current_user['id']
+    data = request.get_json() or {}
+    reason = (data.get('reason') or data.get('remark') or '').strip()
+    booking, err_code, err_msg = booking_service.reject_booking(booking_id, admin_id, reason)
+    if not booking:
+        return jsonify({'code': err_code, 'message': err_msg, 'data': None}), 200
+    return jsonify({'code': 0, 'message': err_msg, 'data': booking}), 200
 
 
 # ─── 统计数据 ────────────────────────────────────────────
