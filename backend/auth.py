@@ -46,7 +46,7 @@ def get_current_user():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        'SELECT id, username, name, email, role, status FROM users WHERE id = ?',
+        'SELECT id, username, name, email, college, role, status FROM users WHERE id = ?',
         (payload['user_id'],)
     )
     row = cursor.fetchone()
@@ -87,7 +87,7 @@ def login(username, password):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        'SELECT id, username, password_hash, name, email, role, status FROM users WHERE username = ?',
+        'SELECT id, username, password_hash, name, email, college, role, status FROM users WHERE username = ?',
         (username,)
     )
     row = cursor.fetchone()
@@ -105,6 +105,7 @@ def login(username, password):
         'username': row['username'],
         'name': row['name'],
         'email': row['email'],
+        'college': row['college'],
         'role': row['role'],
     }
     token = generate_token(row['id'], row['username'], row['role'])

@@ -18,7 +18,7 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # 用户表
+    # 用户表（添加学院字段）
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +28,7 @@ def init_db():
             email VARCHAR(100),
             phone VARCHAR(20),
             wechat_id VARCHAR(100),
+            college VARCHAR(100) DEFAULT '',
             role VARCHAR(20) NOT NULL DEFAULT 'USER',
             status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
@@ -35,7 +36,17 @@ def init_db():
         )
     ''')
 
-    # 会议室表
+    # 学院表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS colleges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            code VARCHAR(50) NOT NULL UNIQUE,
+            created_at DATETIME NOT NULL DEFAULT (datetime('now'))
+        )
+    ''')
+
+    # 会议室表（添加审批属性和可见性）
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS rooms (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +55,8 @@ def init_db():
             floor VARCHAR(50) NOT NULL,
             capacity INTEGER NOT NULL,
             status VARCHAR(32) NOT NULL DEFAULT 'AVAILABLE',
+            need_approval INTEGER DEFAULT 1,
+            visible_colleges TEXT DEFAULT '',
             description VARCHAR(500),
             open_hours VARCHAR(50) DEFAULT '08:00-22:00',
             image VARCHAR(20) DEFAULT '🏢',
@@ -170,40 +183,73 @@ def seed_data():
         conn.close()
         return
 
-    # 插入默认管理员
     from werkzeug.security import generate_password_hash
-    cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('admin', generate_password_hash('123456'), '系统管理员', 'admin@company.com', 'ADMIN'))
+    
+    # 插入学院
+    colleges = [
+        ('计算机学院', 'CS'),
+        ('软件学院', 'SE'),
+        ('信息学院', 'INFO'),
+        ('管理学院', 'MGMT'),
+    ]
+    for name, code in colleges:
+        cursor.execute('INSERT INTO colleges (name, code) VALUES (?, ?)', (name, code))
+    
+    # 获取学院ID
+    cursor.execute('SELECT id FROM colleges WHERE code = ?', ('CS',))
+    cs_id = str(cursor.fetchone()[0])
+    cursor.execute('SELECT id FROM colleges WHERE code = ?', ('SE',))
+    se_id = str(cursor.fetchone()[0])
+    cursor.execute('SELECT id FROM colleges WHERE code = ?', ('INFO',))
+    info_id = str(cursor.fetchone()[0])
+    cursor.execute('SELECT id FROM colleges WHERE code = ?', ('MGMT',))
+    mgmt_id = str(cursor.fetchone()[0])
 
-    # 插入普通用户
+    # 插入默认管理员（计算机学院）
     cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('user', generate_password_hash('123456'), '张明', 'user@company.com', 'USER'))
+        INSERT INTO users (username, password_hash, name, email, college, role)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('admin', generate_password_hash('123456'), '张老师', 'admin@company.com', cs_id, 'ADMIN'))
 
+    # 插入普通用户（计算机学院）
     cursor.execute('''
-        INSERT INTO users (username, password_hash, name, email, role)
-        VALUES (?, ?, ?, ?, ?)
-    ''', ('lihua', generate_password_hash('123456'), '李华', 'lihua@company.com', 'USER'))
+        INSERT INTO users (username, password_hash, name, email, college, role)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('zhangsan', generate_password_hash('123456'), '张三', 'zhangsan@company.com', cs_id, 'USER'))
+
+    # 插入普通用户（软件学院）
+    cursor.execute('''
+        INSERT INTO users (username, password_hash, name, email, college, role)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('lisi', generate_password_hash('123456'), '李四', 'lisi@company.com', se_id, 'USER'))
+
+    # 插入普通用户（信息学院）
+    cursor.execute('''
+        INSERT INTO users (username, password_hash, name, email, college, role)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', ('wangwu', generate_password_hash('123456'), '王五', 'wangwu@company.com', info_id, 'USER'))
 
     # 插入会议室
     rooms_data = [
-        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '🌟'),
-        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', '中型会议室，适合部门会议和讨论', '08:00-22:00', '🌊'),
-        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '🌲'),
-        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '☁️'),
-        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '💡'),
-        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', '中型会议室，配备现代化会议设备', '08:00-22:00', '🚀'),
-        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', '小型会客室，温馨舒适', '08:00-22:00', '☀️'),
-        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', '小型独立空间，适合一对一沟通', '08:00-22:00', '🌙'),
+        # 计算机学院专用会议室
+        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', 1, cs_id, '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '🌟'),
+        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', 1, cs_id, '中型会议室，适合部门会议和讨论', '08:00-22:00', '🌊'),
+        # 软件学院专用会议室
+        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', 0, se_id, '中型会议室，配备现代化会议设备', '08:00-22:00', '🚀'),
+        # 计算机+软件学院共享
+        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', 1, f'{cs_id},{se_id}', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '☁️'),
+        # 全校可见（免审批）
+        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', 0, '', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '🌲'),
+        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', 0, '', '小型会客室，温馨舒适', '08:00-22:00', '☀️'),
+        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', 0, '', '小型独立空间，适合一对一沟通', '08:00-22:00', '🌙'),
+        # 维护中
+        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', 0, '', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '💡'),
     ]
 
     for room in rooms_data:
         cursor.execute('''
-            INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO rooms (name, building, floor, capacity, status, need_approval, visible_colleges, description, open_hours, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', room)
         room_id = cursor.lastrowid
 
@@ -227,7 +273,7 @@ def seed_data():
         INSERT INTO booking_rules (max_advance_days, min_duration_minutes, max_duration_minutes,
                                    cancel_limit_minutes, auto_release_minutes, business_start_hour, business_end_hour)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (30, 15, 480, 5, 15, 8, 22))
+    ''', (30, 15, 480, 60, 15, 8, 22))
 
     conn.commit()
     conn.close()

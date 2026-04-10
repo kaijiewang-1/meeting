@@ -30,6 +30,86 @@ const App = {
 
     const role = auth.getRole();
     const user = auth.getUser() || { name: '用户', username: 'user' };
+    const isMobile = window.innerWidth <= 768;
+    const isAdmin = role === 'admin';
+
+    // 用户端菜单（手机端显示，包括管理员在手机上也显示）
+    const userMenuHtml = isMobile ? `
+      <div class="sidebar-section-label">菜单</div>
+      <a href="#/home" class="nav-item" data-page="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        首页工作台
+      </a>
+      <a href="#/rooms" class="nav-item" data-page="rooms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        会议室列表
+      </a>
+      <a href="#/bookings/new" class="nav-item" data-page="bookings-new">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        新建预定
+      </a>
+      <a href="#/bookings/my" class="nav-item" data-page="bookings-my">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+        </svg>
+        我的预定
+        <span class="nav-badge" id="bookingBadge">${this.getActiveBookingCount()}</span>
+      </a>
+      <a href="#/calendar" class="nav-item" data-page="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        日历视图
+      </a>
+    ` : '';
+
+    // 管理端菜单（仅管理员在电脑端显示）
+    const adminMenuHtml = (isAdmin && !isMobile) ? `
+      <div class="sidebar-section-label">管理端</div>
+      <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        会议室管理
+      </a>
+      <a href="#/admin/bookings" class="nav-item" data-page="admin-bookings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        预定记录
+      </a>
+      <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        数据统计
+      </a>
+      <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        审批管理
+        <span class="nav-badge" id="approvalBadge" style="display:none">0</span>
+      </a>
+    ` : '';
 
     document.body.innerHTML = `
       <div class="app-layout">
@@ -49,79 +129,8 @@ const App = {
           </div>
 
           <nav class="sidebar-nav" id="sidebarNav">
-            <div class="sidebar-section-label">用户端</div>
-            <a href="#/home" class="nav-item" data-page="home">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              首页工作台
-            </a>
-            <a href="#/rooms" class="nav-item" data-page="rooms">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              会议室列表
-            </a>
-            <a href="#/bookings/new" class="nav-item" data-page="bookings-new">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
-              新建预定
-            </a>
-            <a href="#/bookings/my" class="nav-item" data-page="bookings-my">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-              </svg>
-              我的预定
-              <span class="nav-badge" id="bookingBadge">${this.getActiveBookingCount()}</span>
-            </a>
-            <a href="#/calendar" class="nav-item" data-page="calendar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              日历视图
-            </a>
-
-            ${role === 'admin' ? `
-            <div class="sidebar-section-label">管理端</div>
-            <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              会议室管理
-            </a>
-            <a href="#/admin/bookings" class="nav-item" data-page="admin-bookings">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              预定记录
-            </a>
-            <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="14"/>
-              </svg>
-              数据统计
-            </a>
-            <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              审批管理
-              <span class="nav-badge" id="approvalBadge" style="display:none">0</span>
-            </a>
-            ` : ''}
+            ${userMenuHtml}
+            ${adminMenuHtml}
           </nav>
 
           <div class="sidebar-footer">
@@ -129,7 +138,7 @@ const App = {
               <div class="sidebar-avatar">${(user.name || user.username || 'U').charAt(0).toUpperCase()}</div>
               <div class="sidebar-user-info">
                 <div class="sidebar-user-name">${utils.escapeHtml(user.name || user.username)}</div>
-                <div class="sidebar-user-role">${role === 'admin' ? '管理员' : '普通用户'}</div>
+                <div class="sidebar-user-role">${isAdmin ? '管理员' : '普通用户'}</div>
               </div>
               <button class="sidebar-user-btn" onclick="App.logout()" title="退出登录">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -156,6 +165,7 @@ const App = {
               </div>
             </div>
             <div class="header-right">
+              <!-- 通知按钮：管理员和普通用户都显示 -->
               <button class="header-icon-btn" id="notificationBtn" title="消息">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                   <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -260,7 +270,6 @@ const App = {
   },
 
   setupNotification() {
-    // 延迟执行，确保 DOM 已渲染完成
     setTimeout(() => {
       const notificationBtn = document.getElementById('notificationBtn');
       
@@ -269,18 +278,15 @@ const App = {
         return;
       }
       
-      // 移除可能存在的旧事件，避免重复绑定
       if (this._notificationHandler) {
         notificationBtn.removeEventListener('click', this._notificationHandler);
       }
       
-      // 保存事件处理函数
       this._notificationHandler = async (e) => {
         e.preventDefault();
         e.stopPropagation();
         
         try {
-          // 动态加载通知弹窗模块
           const module = await import('./pages/notification-popup.js');
           if (module.showNotificationPopup) {
             module.showNotificationPopup();
@@ -294,14 +300,11 @@ const App = {
         }
       };
       
-      // 绑定点击事件
       notificationBtn.addEventListener('click', this._notificationHandler);
       console.log('✅ 通知按钮已绑定');
       
-      // 更新未读数量
       this.updateUnreadCount();
       
-      // 定时刷新未读数
       if (this._unreadInterval) {
         clearInterval(this._unreadInterval);
       }
@@ -309,7 +312,6 @@ const App = {
     }, 200);
   },
 
-  // 备用简单弹窗（当通知模块加载失败时使用）
   showSimpleNotificationPopup() {
     const existingPopup = document.getElementById('simpleNotificationPopup');
     if (existingPopup) existingPopup.remove();
@@ -340,7 +342,6 @@ const App = {
     `;
     document.body.appendChild(popup);
     
-    // 点击外部关闭
     setTimeout(() => {
       const closePopup = (e) => {
         if (!popup.contains(e.target) && e.target !== document.getElementById('notificationBtn')) {
@@ -372,8 +373,8 @@ const App = {
         }
       }
       
-      // 更新审批待处理数量
-      if (auth.isAdmin()) {
+      // 更新审批待处理数量（仅管理员在电脑端）
+      if (auth.isAdmin() && window.innerWidth > 768) {
         const pendingRes = await fetch('http://127.0.0.1:5000/api/approvals/pending', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -403,12 +404,16 @@ const App = {
 
   toggleUserDropdown() {
     const menu = document.getElementById('userDropdownMenu');
+    const dropdown = document.getElementById('userDropdown');
+    
     if (!menu) return;
+    
     const isHidden = menu.style.display === 'none';
     menu.style.display = isHidden ? 'block' : 'none';
+    
     if (isHidden) {
       const close = (e) => {
-        if (!document.getElementById('userDropdown').contains(e.target)) {
+        if (dropdown && !dropdown.contains(e.target)) {
           menu.style.display = 'none';
           document.removeEventListener('click', close);
         }
@@ -425,15 +430,62 @@ const App = {
     if (this._routerSetup) return;
     this._routerSetup = true;
 
+    // 添加一个标志，防止重复提示
+    let hasShownDeviceWarning = false;
+
     router.guard((path) => {
-      if (!auth.isLoggedIn() && path !== '/login') {
+      const isAdmin = auth.isAdmin();
+      const isMobile = window.innerWidth <= 768;
+      const isAdminPath = path.startsWith('/admin');
+      const isLoginPath = path === '/login';
+      const isUserPath = ['/home', '/rooms', '/bookings/new', '/bookings/my', '/calendar'].some(p => path === p || path.startsWith(p));
+
+      // ========== 登录页面：直接放行，不检查任何东西 ==========
+      if (isLoginPath) {
+        return true;
+      }
+
+      // ========== 未登录：跳转到登录页 ==========
+      if (!auth.isLoggedIn()) {
         router.navigate('/login');
         return false;
       }
-      if (auth.isLoggedIn() && path === '/login') {
+
+      // ========== 已登录用户：检查设备和权限 ==========
+
+      // 普通用户只能在手机端使用
+      if (!isAdmin && !isMobile && isUserPath) {
+        if (!hasShownDeviceWarning) {
+          hasShownDeviceWarning = true;
+          if (window.Toast) Toast.error('请在手机上使用会议室预定系统');
+        }
+        router.navigate('/login');
+        return false;
+      }
+
+      // 管理员在手机上不能访问管理端（但可以访问用户端页面）
+      if (isAdminPath && isAdmin && isMobile) {
+        if (!hasShownDeviceWarning) {
+          hasShownDeviceWarning = true;
+          if (window.Toast) Toast.error('管理端请使用电脑访问');
+        }
         router.navigate('/home');
         return false;
       }
+
+      // 非管理员不能访问管理端
+      if (isAdminPath && !isAdmin) {
+        if (!hasShownDeviceWarning) {
+          hasShownDeviceWarning = true;
+          if (window.Toast) Toast.error('无权限访问');
+        }
+        router.navigate('/home');
+        return false;
+      }
+
+      // 重置警告标志（当访问正确页面时）
+      hasShownDeviceWarning = false;
+      return true;
     });
 
     router.add('/login', async () => {

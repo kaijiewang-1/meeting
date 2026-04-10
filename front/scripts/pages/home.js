@@ -31,7 +31,10 @@ export default async function init() {
         <span class="filter-label">参会人数</span>
         <select class="form-select" id="filterCapacity" style="min-width:100px">
           <option value="">不限</option>
-          ${[2,4,6,8,10,12,15,20,30].map(n => `<option value="${n}">${n}人+</option>`).join('')}
+          <option value="1">10人以下</option>
+          <option value="10">10-20人</option>
+          <option value="20">20-30人</option>
+          <option value="30">30人以上</option>
         </select>
       </div>
       <div class="filter-actions">
@@ -44,9 +47,9 @@ export default async function init() {
       </div>
     </div>
 
-    <!-- Stats row -->
-    <div class="grid-4" style="margin-bottom:24px" id="statsRow">
-      ${App.renderSkeleton('card', 4)}
+    <!-- Stats row - 3 cards -->
+    <div class="grid-3" style="margin-bottom:24px" id="statsRow">
+      ${App.renderSkeleton('card', 3)}
     </div>
 
     <!-- Today's meetings + recommended rooms -->
@@ -82,9 +85,9 @@ export default async function init() {
             <span class="badge badge-warning">维护</span>
             <div>
               <div style="font-weight:600;font-size:13px;margin-bottom:2px">森林厅临时维护通知</div>
-              <div style="font-size:12px;color:var(--color-text-secondary)">森林厅将于3月27日（周五）14:00-18:00进行设备维护，届时不可预定。</div>
+              <div style="font-size:12px;color:var(--color-text-secondary)">森林厅将于本周五14:00-18:00进行设备维护，届时不可预定。</div>
             </div>
-            <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:auto;white-space:nowrap">2026-03-25</span>
+            <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:auto;white-space:nowrap">2026-04-10</span>
           </div>
           <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--color-primary-light);border-radius:var(--radius-md);border-left:3px solid var(--color-primary)">
             <span class="badge badge-primary">通知</span>
@@ -92,7 +95,7 @@ export default async function init() {
               <div style="font-weight:600;font-size:13px;margin-bottom:2px">会议室预定系统全新上线</div>
               <div style="font-size:12px;color:var(--color-text-secondary)">新版会议室预定系统支持实时冲突检测、日历视图和移动端适配，欢迎使用！</div>
             </div>
-            <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:auto;white-space:nowrap">2026-03-20</span>
+            <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:auto;white-space:nowrap">2026-04-01</span>
           </div>
         </div>
       </div>
@@ -123,7 +126,7 @@ async function loadStats() {
     if (!el) return;
     el.innerHTML = `
       <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-primary-light);color:var(--color-primary)">
+        <div class="stat-card-icon" style="background:var(--color-primary-light);color:var(--color-primary);margin:0 auto 12px auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
@@ -131,7 +134,7 @@ async function loadStats() {
         </div>
         <div class="stat-card-value">${s.totalRooms}</div>
         <div class="stat-card-label">会议室总数</div>
-        <div class="stat-card-trend up">
+        <div class="stat-card-trend up" style="justify-content:center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
             <polyline points="18 15 12 9 6 15"/>
           </svg>
@@ -139,7 +142,7 @@ async function loadStats() {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-available-bg);color:var(--color-available)">
+        <div class="stat-card-icon" style="background:var(--color-available-bg);color:var(--color-available);margin:0 auto 12px auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
             <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
             <polyline points="22 4 12 14.01 9 11.01"/>
@@ -147,7 +150,7 @@ async function loadStats() {
         </div>
         <div class="stat-card-value">${s.availableRooms}</div>
         <div class="stat-card-label">当前空闲</div>
-        <div class="stat-card-trend up" style="color:var(--color-available)">
+        <div class="stat-card-trend up" style="color:var(--color-available);justify-content:center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
             <polyline points="18 15 12 9 6 15"/>
           </svg>
@@ -155,7 +158,7 @@ async function loadStats() {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-booked-bg);color:var(--color-booked)">
+        <div class="stat-card-icon" style="background:var(--color-booked-bg);color:var(--color-booked);margin:0 auto 12px auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
             <rect x="3" y="4" width="18" height="18" rx="2"/>
             <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
@@ -164,25 +167,8 @@ async function loadStats() {
         </div>
         <div class="stat-card-value">${s.todayBookings}</div>
         <div class="stat-card-label">今日预定</div>
-        <div class="stat-card-trend" style="color:var(--color-booked)">
+        <div class="stat-card-trend" style="color:var(--color-booked);justify-content:center">
           会议进行中
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-icon" style="background:var(--color-busy-bg);color:var(--color-busy)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <line x1="18" y1="20" x2="18" y2="10"/>
-            <line x1="12" y1="20" x2="12" y2="4"/>
-            <line x1="6" y1="20" x2="6" y2="14"/>
-          </svg>
-        </div>
-        <div class="stat-card-value">${s.utilizationRate}%</div>
-        <div class="stat-card-label">今日利用率</div>
-        <div class="stat-card-trend up">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-          近7日平均
         </div>
       </div>
     `;

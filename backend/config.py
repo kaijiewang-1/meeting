@@ -21,6 +21,8 @@ class Config:
     BOOKING_STATUS_FINISHED = 'FINISHED'
     BOOKING_STATUS_CANCELED = 'CANCELED'
     BOOKING_STATUS_EXPIRED = 'EXPIRED'
+    BOOKING_STATUS_PENDING_APPROVAL = 'PENDING_APPROVAL'
+    BOOKING_STATUS_REJECTED = 'REJECTED'
 
     # 有效预定状态（占用时段）
     ACTIVE_BOOKING_STATUSES = ['BOOKED', 'CHECKED_IN', 'IN_USE']
@@ -29,7 +31,16 @@ class Config:
     MAX_ADVANCE_DAYS = 30
     MIN_DURATION_MINUTES = 15
     MAX_DURATION_MINUTES = 480
-    CANCEL_LIMIT_MINUTES = 5
+    CANCEL_LIMIT_MINUTES = 60
     AUTO_RELEASE_MINUTES = 15
     BUSINESS_START_HOUR = 8
     BUSINESS_END_HOUR = 22
+
+    # 设备标签
+    FACILITIES = {
+        'projector': '投影仪',
+        'whiteboard': '白板',
+        'video_conf': '视频会议',
+        'tv': '电视',
+        'audio': '音响系统',
+    }

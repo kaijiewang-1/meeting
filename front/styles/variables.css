@@ -1,9 +1,9 @@
 :root {
-  /* Brand */
-  --color-primary: #4f46e5;
-  --color-primary-hover: #4338ca;
-  --color-primary-light: #eef2ff;
-  --color-primary-dark: #3730a3;
+  /* Brand - 新主题色 RGB(106, 6, 7) */
+  --color-primary: #6a0607;
+  --color-primary-hover: #4a0405;
+  --color-primary-light: #f0e6e6;
+  --color-primary-dark: #3a0304;
 
   /* Status */
   --color-available: #10b981;

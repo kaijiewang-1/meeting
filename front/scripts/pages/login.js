@@ -46,8 +46,10 @@ export default function init() {
           </button>
 
           <div style="text-align:center;font-size:12px;color:var(--color-text-tertiary);padding-top:16px;border-top:1px solid var(--color-border)">
-            <div style="margin-bottom:6px">测试账号：普通用户 <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">user</code> / <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">123456</code></div>
-            <div>管理员 <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">admin</code> / <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">123456</code></div>
+            <div style="margin-bottom:6px">测试账号：</div>
+            <div>A学院：<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">zhangsan</code> / <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">123456</code></div>
+            <div>B学院：<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">lisi</code> / <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">123456</code></div>
+            <div>管理员：<code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">admin</code> / <code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">123456</code></div>
           </div>
         </form>
       </div>
@@ -147,7 +149,12 @@ export default function init() {
         auth.login(res.data.user, res.data.token, res.data.role);
         Toast.success('登录成功，正在跳转...');
         setTimeout(() => {
-          window.location.hash = '#/home';
+          // 根据角色跳转到不同页面
+          if (auth.isAdmin()) {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.hash = '#/home';
+          }
         }, 300);
       } catch (err) {
         Toast.error(err.message || '登录失败，请检查用户名和密码');

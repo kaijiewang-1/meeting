@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from database import get_db
 from config import Config
 from services.notification_service import notification_service
+from services.room_service import get_room_need_approval
 
 
 # ─── 冲突检测 ────────────────────────────────────────────────
@@ -151,6 +152,10 @@ def create_booking(organizer_id, data):
     if not valid:
         return None, err_code, err_msg
 
+    # 检查会议室是否需要审批
+    need_approval = get_room_need_approval(room_id)
+    status = 'PENDING_APPROVAL' if need_approval else 'BOOKED'
+
     # 生成预定编号
     booking_no = f"BK{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
 
@@ -163,26 +168,25 @@ def create_booking(organizer_id, data):
              attendee_count, status, remark)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (booking_no, subject, organizer_id, room_id, start_time, end_time,
-              attendee_count, 'PENDING_APPROVAL', remark))
+              attendee_count, status, remark))
         booking_id = cursor.lastrowid
         conn.commit()
     finally:
         conn.close()
 
-    # 获取完整预定信息
     booking = get_booking_by_id(booking_id)
     
-    # 发送待审批通知给管理员
-    if booking:
-        booking_data = {
-            'room_name': booking.get('room_name', '会议室'),
-            'start_time': start_time,
-            'end_time': end_time,
-            'subject': subject,
-            'organizer_name': booking.get('organizer_name', '用户')
-        }
-        
-        # 获取所有管理员
+    # 发送通知
+    booking_data = {
+        'room_name': booking.get('room_name', '会议室'),
+        'start_time': start_time,
+        'end_time': end_time,
+        'subject': subject,
+        'organizer_name': booking.get('organizer_name', '用户')
+    }
+    
+    if need_approval:
+        # 需要审批：通知管理员
         conn2 = get_db()
         cursor2 = conn2.cursor()
         cursor2.execute("SELECT id, name FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE'")
@@ -193,8 +197,15 @@ def create_booking(organizer_id, data):
             notification_service.send_booking_pending_approval(
                 booking_id, admin['id'], booking_data
             )
+        message = '预定已提交，等待审批'
+    else:
+        # 不需要审批：直接通知用户预定成功
+        notification_service.send_booking_created(
+            booking_id, organizer_id, booking_data
+        )
+        message = '预定成功'
     
-    return booking, 0, '预定已提交，等待审批'
+    return booking, 0, message
 
 
 def get_booking_by_id(booking_id):
@@ -258,7 +269,7 @@ def get_all_bookings(filters=None):
     conn = get_db()
     cursor = conn.cursor()
     sql = '''
-        SELECT b.*, r.name as room_name, u.name as organizer_name
+        SELECT b.*, r.name as room_name, u.name as organizer_name, u.college as organizer_college
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
         LEFT JOIN users u ON b.organizer_id = u.id
@@ -330,7 +341,7 @@ def cancel_booking(booking_id, user_id, is_admin=False):
         'subject': booking.get('subject')
     }
     notification_service.send_booking_canceled(
-        booking_id, user_id, booking_data
+        booking_id, booking['organizer_id'], booking_data
     )
 
     return get_booking_by_id(booking_id), 0, '已取消预定'

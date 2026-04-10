@@ -42,7 +42,10 @@ export default async function init() {
               <div class="form-group">
                 <label class="form-label">参会人数 <span style="color:var(--color-danger)">*</span></label>
                 <select id="attendeeCount" class="form-select" required>
-                  ${Array.from({length: 30}, (_, i) => `<option value="${i+1}">${i+1}人</option>`).join('')}
+                  <option value="1">10人以下</option>
+                  <option value="10">10-20人</option>
+                  <option value="20">20-30人</option>
+                  <option value="30">30人以上</option>
                 </select>
               </div>
             </div>
@@ -66,6 +69,34 @@ export default async function init() {
                   }).join('')}
                 </select>
               </div>
+            </div>
+
+            <!-- 设备筛选 -->
+            <div class="form-group">
+              <label class="form-label">所需设备（可多选）</label>
+              <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;margin-bottom:8px">
+                <label class="checkbox-group">
+                  <input type="checkbox" value="projector" class="facility-checkbox">
+                  <span>📽️ 投影仪</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="whiteboard" class="facility-checkbox">
+                  <span>📝 白板</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="video_conf" class="facility-checkbox">
+                  <span>🎥 视频会议</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="tv" class="facility-checkbox">
+                  <span>📺 电视</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="audio" class="facility-checkbox">
+                  <span>🔊 音响系统</span>
+                </label>
+              </div>
+              <div class="form-hint">可多选，只显示满足所有设备要求的会议室</div>
             </div>
 
             <div class="form-group">
@@ -145,17 +176,39 @@ export default async function init() {
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
       const attendees = document.getElementById('attendeeCount').value;
+      
+      // 获取选中的设备
+      const selectedFacilities = [];
+      document.querySelectorAll('.facility-checkbox:checked').forEach(cb => {
+        selectedFacilities.push(cb.value);
+      });
 
       const selector = document.getElementById('roomSelector');
       selector.innerHTML = `<div style="padding:20px;text-align:center;color:var(--color-text-tertiary)">查找中...</div>`;
 
       try {
-        const res = await api.getAvailableRooms({ capacity: attendees });
-        const rooms = res.data;
+        // 构建请求参数
+        const params = { capacity: attendees };
+        if (selectedFacilities.length > 0) {
+          params.facilities = selectedFacilities;
+        }
+        
+        const res = await api.getAvailableRooms(params);
+        let rooms = res.data;
+        
+        // 前端再过滤设备（确保包含所有选中的设备）
+        if (selectedFacilities.length > 0) {
+          rooms = rooms.filter(room => {
+            const roomFacilities = room.facilities || [];
+            return selectedFacilities.every(f => roomFacilities.includes(f));
+          });
+        }
+        
         if (!rooms.length) {
           selector.innerHTML = `<div style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:13px">未找到符合条件的空闲会议室</div>`;
           return;
         }
+        
         selector.innerHTML = rooms.map(r => `
           <div class="room-card" style="cursor:pointer;margin-bottom:8px"
                onclick="BookingNewPage.selectRoom(${r.id}, '${utils.escapeHtml(r.name)}', ${r.capacity})"
@@ -163,11 +216,16 @@ export default async function init() {
             <div style="display:flex;align-items:center;gap:12px;padding:12px">
               <div style="width:40px;height:40px;border-radius:var(--radius-md);background:var(--color-primary-light);
                           display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">
-                ${r.image}
+                ${r.image || '🏢'}
               </div>
               <div style="flex:1">
                 <div style="font-weight:600;font-size:13px">${utils.escapeHtml(r.name)}</div>
                 <div style="font-size:12px;color:var(--color-text-secondary)">${utils.escapeHtml(r.building)} · ${utils.escapeHtml(r.floor)} · ${r.capacity}人</div>
+                ${r.facilities && r.facilities.length > 0 ? `
+                <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">
+                  设备: ${r.facilities.map(f => utils.facilityLabel(f)).join(' · ')}
+                </div>
+                ` : ''}
               </div>
               <span class="tag tag-available">空闲</span>
             </div>
@@ -190,8 +248,9 @@ export default async function init() {
       }
       document.getElementById('selectedRoomId').value = id;
       const attendeeCount = parseInt(document.getElementById('attendeeCount').value);
+      // 参会人数判断：如果是范围值，需要比较容量
       if (capacity < attendeeCount) {
-        Toast.warning(`该会议室容量为${capacity}人，低于参会人数${attendeeCount}人`);
+        Toast.warning(`该会议室容量为${capacity}人，低于参会人数要求`);
       }
     },
 
@@ -216,7 +275,14 @@ export default async function init() {
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
       const roomId = parseInt(document.getElementById('selectedRoomId').value);
-      const attendeeCount = parseInt(document.getElementById('attendeeCount').value);
+      const attendeeSelect = document.getElementById('attendeeCount').value;
+      // 解析参会人数范围，取最小值作为筛选条件，但实际预定人数可以灵活处理
+      let attendeeCount = 1;
+      if (attendeeSelect === '1') attendeeCount = 5;  // 10人以下默认5
+      else if (attendeeSelect === '10') attendeeCount = 15;
+      else if (attendeeSelect === '20') attendeeCount = 25;
+      else if (attendeeSelect === '30') attendeeCount = 35;
+      
       const remark = document.getElementById('remark').value.trim();
 
       if (!subject) { Toast.error('请填写会议主题'); return; }
@@ -251,7 +317,6 @@ export default async function init() {
                           <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg> 提交预定`;
 
-        // 修改提示信息：等待审批
         Toast.success(`预定申请已提交，等待管理员审批！`);
         setTimeout(() => router.navigate('/bookings/my'), 2000);
       } catch (err) {
@@ -276,6 +341,11 @@ function renderSelectedRoom(room) {
       <div style="flex:1">
         <div style="font-weight:600;font-size:13px">${utils.escapeHtml(room.name)}</div>
         <div style="font-size:12px;color:var(--color-text-secondary)">${utils.escapeHtml(room.building)} · ${utils.escapeHtml(room.floor)} · ${room.capacity}人</div>
+        ${room.facilities && room.facilities.length > 0 ? `
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">
+          设备: ${room.facilities.map(f => utils.facilityLabel(f)).join(' · ')}
+        </div>
+        ` : ''}
       </div>
       <span class="tag tag-primary">已选择</span>
     </div>

@@ -1021,3 +1021,41 @@ tbody tr:last-child td {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+/* 移动端统计卡片排版优化 */
+@media (max-width: 768px) {
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 10px 6px;
+    text-align: center;
+  }
+  
+  .stat-card-icon {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto 6px auto;
+  }
+  
+  .stat-card-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .stat-card-value {
+    font-size: 16px;
+  }
+  
+  .stat-card-label {
+    font-size: 10px;
+  }
+  
+  .stat-card-trend {
+    font-size: 9px;
+    margin-top: 4px;
+    justify-content: center;
+  }
+}

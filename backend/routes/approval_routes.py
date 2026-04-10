@@ -31,7 +31,6 @@ def get_pending_approvals():
     bookings = []
     for row in rows:
         b = dict(row)
-        # 格式化时间
         for f in ['start_time', 'end_time', 'created_at', 'updated_at']:
             if b.get(f):
                 b[f] = b[f].isoformat() if hasattr(b[f], 'isoformat') else str(b[f])
@@ -48,7 +47,6 @@ def approve_booking(booking_id):
     conn = get_db()
     cursor = conn.cursor()
     
-    # 获取预定信息
     cursor.execute('''
         SELECT b.*, r.name as room_name, u.name as organizer_name, u.id as organizer_id
         FROM bookings b
@@ -66,7 +64,6 @@ def approve_booking(booking_id):
         conn.close()
         return jsonify({'code': 40001, 'message': '当前状态无法审批'}), 200
     
-    # 更新状态为已确认
     cursor.execute('''
         UPDATE bookings 
         SET status = 'BOOKED', updated_at = datetime('now')
@@ -75,7 +72,6 @@ def approve_booking(booking_id):
     conn.commit()
     conn.close()
     
-    # 发送审批通过通知
     booking_data = {
         'room_name': booking['room_name'],
         'start_time': booking['start_time'],
@@ -100,7 +96,6 @@ def reject_booking(booking_id):
     conn = get_db()
     cursor = conn.cursor()
     
-    # 获取预定信息
     cursor.execute('''
         SELECT b.*, r.name as room_name, u.name as organizer_name, u.id as organizer_id
         FROM bookings b
@@ -118,7 +113,6 @@ def reject_booking(booking_id):
         conn.close()
         return jsonify({'code': 40001, 'message': '当前状态无法审批'}), 200
     
-    # 更新状态为拒绝
     cursor.execute('''
         UPDATE bookings 
         SET status = 'REJECTED', remark = ?, updated_at = datetime('now')
@@ -127,7 +121,6 @@ def reject_booking(booking_id):
     conn.commit()
     conn.close()
     
-    # 发送拒绝通知
     booking_data = {
         'room_name': booking['room_name'],
         'start_time': booking['start_time'],
@@ -149,11 +142,9 @@ def get_approval_statistics():
     conn = get_db()
     cursor = conn.cursor()
     
-    # 待审批数量
     cursor.execute("SELECT COUNT(*) FROM bookings WHERE status = 'PENDING_APPROVAL'")
     pending = cursor.fetchone()[0]
     
-    # 今日审批数量
     today = datetime.now().strftime('%Y-%m-%d')
     cursor.execute('''
         SELECT COUNT(*) FROM bookings 
@@ -162,7 +153,6 @@ def get_approval_statistics():
     ''', (today,))
     today_count = cursor.fetchone()[0]
     
-    # 本月审批数量
     cursor.execute('''
         SELECT COUNT(*) FROM bookings 
         WHERE status IN ('BOOKED', 'REJECTED') 

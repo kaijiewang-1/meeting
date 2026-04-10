@@ -14,7 +14,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @require_admin
 def admin_get_rooms():
     """获取所有会议室（管理员）"""
-    rooms = room_service.get_all_rooms()
+    rooms = room_service.get_all_rooms(is_admin=True)
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 
@@ -49,6 +49,26 @@ def admin_delete_room(room_id):
     """删除会议室"""
     room_service.delete_room(room_id)
     return jsonify({'code': 0, 'message': '删除成功', 'data': None}), 200
+
+
+@admin_bp.route('/colleges', methods=['GET'])
+@require_admin
+def get_colleges():
+    """获取学院列表"""
+    from database import get_db
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, name, code FROM colleges ORDER BY id')
+    rows = cursor.fetchall()
+    conn.close()
+    colleges = []
+    for row in rows:
+        colleges.append({
+            'id': row['id'],
+            'name': row['name'],
+            'code': row['code']
+        })
+    return jsonify({'code': 0, 'data': colleges}), 200
 
 
 # ─── 预定管理 ────────────────────────────────────────────
