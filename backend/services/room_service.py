@@ -53,9 +53,11 @@ def get_all_rooms(filters=None, for_user=None):
     cursor = conn.cursor()
 
     sql = '''
-        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities
+        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities,
+               MAX(ap.name) as approver_name
         FROM rooms r
         LEFT JOIN room_facilities rf ON r.id = rf.room_id
+        LEFT JOIN users ap ON r.approver_user_id = ap.id
         WHERE 1=1
     '''
     params = []
@@ -112,9 +114,11 @@ def get_room_by_id(room_id, for_user=None):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities
+        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities,
+               MAX(ap.name) as approver_name
         FROM rooms r
         LEFT JOIN room_facilities rf ON r.id = rf.room_id
+        LEFT JOIN users ap ON r.approver_user_id = ap.id
         WHERE r.id = ?
         GROUP BY r.id
     ''', (room_id,))
@@ -137,9 +141,11 @@ def get_available_rooms(filters=None, for_user=None):
 
     # 构建基础查询
     sql = '''
-        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities
+        SELECT r.*, GROUP_CONCAT(rf.facility_code) as facilities,
+               MAX(ap.name) as approver_name
         FROM rooms r
         LEFT JOIN room_facilities rf ON r.id = rf.room_id
+        LEFT JOIN users ap ON r.approver_user_id = ap.id
         WHERE r.status = ?
     '''
     params = [Config.ROOM_STATUS_AVAILABLE]
@@ -254,15 +260,24 @@ def create_room(data):
     vis_scope = data.get('visibility_scope') or data.get('visibilityScope') or Config.ROOM_VISIBILITY_ALL
     if vis_scope not in (Config.ROOM_VISIBILITY_ALL, Config.ROOM_VISIBILITY_COLLEGES):
         vis_scope = Config.ROOM_VISIBILITY_ALL
+    appr_raw = data.get('approver_user_id') if 'approver_user_id' in data else data.get('approverUserId')
+    if appr_raw in (None, '', 0, '0'):
+        approver_user_id = None
+    else:
+        approver_user_id = int(appr_raw)
     cursor.execute('''
-        INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image,
-                           requires_approval, visibility_scope)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours,
+                           weekday_open_hours, weekend_open_hours, image,
+                           requires_approval, approver_user_id, visibility_scope)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data['name'], data['building'], data['floor'],
         int(data['capacity']), data.get('status', 'AVAILABLE'),
-        data.get('description', ''), data.get('open_hours', '08:00-22:00'),
-        data.get('image', '🏢'), req_appr, vis_scope,
+        data.get('description', ''),
+        data.get('open_hours', '08:00-22:00'),
+        data.get('weekday_open_hours') or data.get('weekdayOpenHours') or data.get('open_hours', '08:00-18:00'),
+        data.get('weekend_open_hours') or data.get('weekendOpenHours') or '09:00-17:00',
+        data.get('image', '🏢'), req_appr, approver_user_id, vis_scope,
     ))
     room_id = cursor.lastrowid
 
@@ -293,16 +308,37 @@ def update_room(room_id, data):
 
     updates = []
     params = []
-    for field in ['name', 'building', 'floor', 'capacity', 'status', 'description', 'open_hours', 'image']:
+    for field in ['name', 'building', 'floor', 'capacity', 'status', 'description', 'open_hours',
+                  'weekday_open_hours', 'weekend_open_hours', 'image']:
         if field in data:
             updates.append(f'{field} = ?')
             params.append(data[field])
+        elif field.replace('_', '') in [k.replace('_', '') for k in data.keys() if isinstance(k, str)]:  # handle camelCase fallback
+            # Simple handling for frontend camelCase
+            camel_key = next((k for k in data if k.lower().replace('_', '') == field.lower().replace('_', '')), None)
+            if camel_key:
+                updates.append(f'{field} = ?')
+                params.append(data[camel_key])
     if 'requires_approval' in data:
         updates.append('requires_approval = ?')
         params.append(1 if int(data['requires_approval']) else 0)
     if 'requiresApproval' in data:
         updates.append('requires_approval = ?')
         params.append(1 if int(data['requiresApproval']) else 0)
+    if 'approver_user_id' in data:
+        v = data['approver_user_id']
+        if v in (None, '', 0, '0'):
+            updates.append('approver_user_id = NULL')
+        else:
+            updates.append('approver_user_id = ?')
+            params.append(int(v))
+    if 'approverUserId' in data and 'approver_user_id' not in data:
+        v = data['approverUserId']
+        if v in (None, '', 0, '0'):
+            updates.append('approver_user_id = NULL')
+        else:
+            updates.append('approver_user_id = ?')
+            params.append(int(v))
     if 'visibility_scope' in data or 'visibilityScope' in data:
         vs = data.get('visibility_scope') or data.get('visibilityScope')
         if vs in (Config.ROOM_VISIBILITY_ALL, Config.ROOM_VISIBILITY_COLLEGES):

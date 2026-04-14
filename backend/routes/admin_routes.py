@@ -3,9 +3,26 @@
 """
 from flask import Blueprint, request, jsonify, g
 from auth import require_admin
+from database import get_db
 from services import room_service, booking_service, stats_service
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
+
+
+# ─── 审批人候选（管理员账号）────────────────────────────────
+
+@admin_bp.route('/approvers', methods=['GET'])
+@require_admin
+def admin_list_approvers():
+    """会议室「需审批」时可指定的审批人列表（角色为 ADMIN 且账号有效）"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, username, name FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE' ORDER BY name, id"
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify({'code': 0, 'message': 'success', 'data': rows}), 200
 
 
 # ─── 会议室管理 ────────────────────────────────────────────

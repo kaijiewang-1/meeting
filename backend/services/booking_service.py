@@ -189,10 +189,12 @@ def get_booking_by_id(booking_id):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT b.*, r.name as room_name, u.name as organizer_name
+        SELECT b.*, r.name as room_name, u.name as organizer_name,
+               a.name as approver_name
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
         LEFT JOIN users u ON b.organizer_id = u.id
+        LEFT JOIN users a ON b.approved_by = a.id
         WHERE b.id = ?
     ''', (booking_id,))
     row = cursor.fetchone()
@@ -201,7 +203,7 @@ def get_booking_by_id(booking_id):
         return None
     b = dict(row)
     # 格式化时间
-    for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at']:
+    for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at', 'approved_at']:
         if b.get(f):
             b[f] = b[f].isoformat() if isinstance(b[f], datetime) else str(b[f])
     return b
@@ -212,9 +214,10 @@ def get_my_bookings(organizer_id, status_filter=None):
     conn = get_db()
     cursor = conn.cursor()
     sql = '''
-        SELECT b.*, r.name as room_name
+        SELECT b.*, r.name as room_name, a.name as approver_name
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
+        LEFT JOIN users a ON b.approved_by = a.id
         WHERE b.organizer_id = ?
     '''
     params = [organizer_id]
@@ -233,7 +236,7 @@ def get_my_bookings(organizer_id, status_filter=None):
     bookings = []
     for row in rows:
         b = dict(row)
-        for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at']:
+        for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at', 'approved_at']:
             if b.get(f):
                 b[f] = b[f].isoformat() if isinstance(b[f], datetime) else str(b[f])
         bookings.append(b)
@@ -245,10 +248,12 @@ def get_all_bookings(filters=None):
     conn = get_db()
     cursor = conn.cursor()
     sql = '''
-        SELECT b.*, r.name as room_name, u.name as organizer_name
+        SELECT b.*, r.name as room_name, u.name as organizer_name,
+               a.name as approver_name
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
         LEFT JOIN users u ON b.organizer_id = u.id
+        LEFT JOIN users a ON b.approved_by = a.id
         WHERE 1=1
     '''
     params = []
@@ -275,7 +280,7 @@ def get_all_bookings(filters=None):
     bookings = []
     for row in rows:
         b = dict(row)
-        for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at']:
+        for f in ['start_time', 'end_time', 'canceled_at', 'finished_at', 'created_at', 'updated_at', 'approved_at']:
             if b.get(f):
                 b[f] = b[f].isoformat() if isinstance(b[f], datetime) else str(b[f])
         bookings.append(b)
@@ -373,6 +378,12 @@ def approve_booking(booking_id, admin_id):
     if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
         return None, 40001, '该预定不在待审批状态'
 
+    room = _get_room(booking['room_id'])
+    if room:
+        designated = room.get('approver_user_id')
+        if designated is not None and str(designated).strip() != '' and int(designated) != int(admin_id):
+            return None, 40301, '您不是该会议室指定的审批人'
+
     if check_conflict(
         booking['room_id'], booking['start_time'], booking['end_time'], exclude_booking_id=booking_id
     ):
@@ -382,9 +393,10 @@ def approve_booking(booking_id, admin_id):
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE bookings
-        SET status = ?, approval_remark = NULL, updated_at = datetime('now')
+        SET status = ?, approval_remark = NULL, approved_by = ?, approved_at = datetime('now'),
+            updated_at = datetime('now')
         WHERE id = ?
-    ''', (Config.BOOKING_STATUS_BOOKED, booking_id))
+    ''', (Config.BOOKING_STATUS_BOOKED, admin_id, booking_id))
     conn.commit()
     conn.close()
 
@@ -400,14 +412,21 @@ def reject_booking(booking_id, admin_id, reason=''):
     if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
         return None, 40001, '该预定不在待审批状态'
 
+    room = _get_room(booking['room_id'])
+    if room:
+        designated = room.get('approver_user_id')
+        if designated is not None and str(designated).strip() != '' and int(designated) != int(admin_id):
+            return None, 40301, '您不是该会议室指定的审批人'
+
     remark = (reason or '').strip()[:500]
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE bookings
-        SET status = ?, approval_remark = ?, updated_at = datetime('now')
+        SET status = ?, approval_remark = ?, approved_by = ?, approved_at = datetime('now'),
+            updated_at = datetime('now')
         WHERE id = ?
-    ''', (Config.BOOKING_STATUS_REJECTED, remark or None, booking_id))
+    ''', (Config.BOOKING_STATUS_REJECTED, remark or None, admin_id, booking_id))
     conn.commit()
     conn.close()
 

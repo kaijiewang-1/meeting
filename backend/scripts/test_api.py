@@ -163,6 +163,10 @@ def main():
     j = _json(r)
     step('admin_rooms', j and j.get('code') == 0, j)
 
+    r = client.get('/api/admin/approvers', headers=h_admin)
+    j = _json(r)
+    step('admin_approvers', j and j.get('code') == 0 and isinstance(j.get('data'), list), j)
+
     r = client.get('/api/admin/bookings', headers=h_admin)
     j = _json(r)
     step('admin_bookings', j and j.get('code') == 0, j)

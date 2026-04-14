@@ -45,11 +45,15 @@ def init_db():
             status VARCHAR(32) NOT NULL DEFAULT 'AVAILABLE',
             description VARCHAR(500),
             open_hours VARCHAR(50) DEFAULT '08:00-22:00',
+            weekday_open_hours VARCHAR(50) DEFAULT '08:00-18:00',
+            weekend_open_hours VARCHAR(50) DEFAULT '09:00-17:00',
             image VARCHAR(20) DEFAULT '🏢',
             requires_approval INTEGER NOT NULL DEFAULT 0,
+            approver_user_id INTEGER,
             visibility_scope VARCHAR(20) NOT NULL DEFAULT 'ALL',
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
-            updated_at DATETIME NOT NULL DEFAULT (datetime('now'))
+            updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (approver_user_id) REFERENCES users(id)
         )
     ''')
 
@@ -91,13 +95,16 @@ def init_db():
             status VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
             remark VARCHAR(500),
             approval_remark VARCHAR(500),
+            approved_by INTEGER,
+            approved_at DATETIME,
             canceled_at DATETIME,
             finished_at DATETIME,
             version INTEGER NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT (datetime('now')),
             updated_at DATETIME NOT NULL DEFAULT (datetime('now')),
             FOREIGN KEY (organizer_id) REFERENCES users(id),
-            FOREIGN KEY (room_id) REFERENCES rooms(id)
+            FOREIGN KEY (room_id) REFERENCES rooms(id),
+            FOREIGN KEY (approved_by) REFERENCES users(id)
         )
     ''')
 
@@ -184,11 +191,29 @@ def migrate_schema(cursor):
         cursor.execute(
             "ALTER TABLE rooms ADD COLUMN visibility_scope VARCHAR(20) NOT NULL DEFAULT 'ALL'"
         )
+    if 'weekday_open_hours' not in cols:
+        cursor.execute(
+            "ALTER TABLE rooms ADD COLUMN weekday_open_hours VARCHAR(50) DEFAULT '08:00-18:00'"
+        )
+    if 'weekend_open_hours' not in cols:
+        cursor.execute(
+            "ALTER TABLE rooms ADD COLUMN weekend_open_hours VARCHAR(50) DEFAULT '09:00-17:00'"
+        )
+    if 'approver_user_id' not in cols:
+        cursor.execute('ALTER TABLE rooms ADD COLUMN approver_user_id INTEGER')
 
     cols = _table_columns(cursor, 'bookings')
     if 'approval_remark' not in cols:
         cursor.execute(
             "ALTER TABLE bookings ADD COLUMN approval_remark VARCHAR(500)"
+        )
+    if 'approved_by' not in cols:
+        cursor.execute(
+            "ALTER TABLE bookings ADD COLUMN approved_by INTEGER"
+        )
+    if 'approved_at' not in cols:
+        cursor.execute(
+            "ALTER TABLE bookings ADD COLUMN approved_at DATETIME"
         )
 
     cursor.execute('''
@@ -236,23 +261,25 @@ def seed_data():
 
     # 插入会议室：requires_approval、visibility_scope、可见学院列表（None 表示不限学院）
     rooms_data = [
-        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '🌟', 0, 'COLLEGES', ['CS']),
-        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', '中型会议室，适合部门会议和讨论', '08:00-22:00', '🌊', 1, 'ALL', None),
-        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '🌲', 0, 'ALL', None),
-        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '☁️', 0, 'ALL', None),
-        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '💡', 0, 'ALL', None),
-        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', '中型会议室，配备现代化会议设备', '08:00-22:00', '🚀', 0, 'ALL', None),
-        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', '小型会客室，温馨舒适', '08:00-22:00', '☀️', 0, 'ALL', None),
-        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', '小型独立空间，适合一对一沟通', '08:00-22:00', '🌙', 0, 'ALL', None),
+        ('星辰厅', '总部大楼', '10F', 20, 'AVAILABLE', '大型会议室，配有专业投影设备，适合团队会议和培训', '08:00-22:00', '08:00-18:00', '09:00-17:00', '🌟', 0, 'COLLEGES', ['CS']),
+        ('海洋厅', '总部大楼', '9F', 12, 'AVAILABLE', '中型会议室，适合部门会议和讨论', '08:00-22:00', '08:00-18:00', '09:00-17:00', '🌊', 1, 'ALL', None),
+        ('森林厅', '总部大楼', '8F', 8, 'AVAILABLE', '小型会议室，适合小组讨论和头脑风暴', '08:00-22:00', '08:00-18:00', '09:00-17:00', '🌲', 0, 'ALL', None),
+        ('云端阁', '总部大楼', '11F', 30, 'AVAILABLE', '大型多功能厅，配有视频会议系统和专业音响', '08:00-22:00', '08:00-18:00', '09:00-17:00', '☁️', 0, 'ALL', None),
+        ('创意坊', '总部大楼', '7F', 6, 'MAINTENANCE', '小型创意空间，适合小型讨论和快速会议', '09:00-18:00', '09:00-18:00', '10:00-16:00', '💡', 0, 'ALL', None),
+        ('未来厅', '分部大楼', '5F', 16, 'AVAILABLE', '中型会议室，配备现代化会议设备', '08:00-22:00', '08:00-18:00', '09:00-17:00', '🚀', 0, 'ALL', None),
+        ('阳光房', '分部大楼', '3F', 4, 'AVAILABLE', '小型会客室，温馨舒适', '08:00-22:00', '08:00-18:00', '09:00-17:00', '☀️', 0, 'ALL', None),
+        ('静思室', '总部大楼', '10F', 2, 'AVAILABLE', '小型独立空间，适合一对一沟通', '08:00-22:00', '08:00-18:00', '09:00-17:00', '🌙', 0, 'ALL', None),
     ]
 
     for room in rooms_data:
-        name, building, floor, capacity, status, description, open_hours, image, req_appr, vis_scope, colleges = room
+        name, building, floor, capacity, status, description, open_hours, weekday_hours, weekend_hours, image, req_appr, vis_scope, colleges = room
         cursor.execute('''
-            INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours, image,
+            INSERT INTO rooms (name, building, floor, capacity, status, description, open_hours,
+                               weekday_open_hours, weekend_open_hours, image,
                                requires_approval, visibility_scope)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (name, building, floor, capacity, status, description, open_hours, image, req_appr, vis_scope))
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (name, building, floor, capacity, status, description, open_hours,
+              weekday_hours, weekend_hours, image, req_appr, vis_scope))
         room_id = cursor.lastrowid
         if colleges:
             for cc in colleges:
@@ -281,6 +308,12 @@ def seed_data():
 
         for f in facilities:
             cursor.execute('INSERT INTO room_facilities (room_id, facility_code) VALUES (?, ?)', (room_id, f))
+
+    # 需审批的会议室默认指定系统管理员为审批人
+    cursor.execute('''
+        UPDATE rooms SET approver_user_id = (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+        WHERE requires_approval = 1
+    ''')
 
     # 插入初始规则
     cursor.execute('''
