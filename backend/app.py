@@ -15,6 +15,8 @@ from routes.auth_routes import auth_bp
 from routes.room_routes import rooms_bp
 from routes.booking_routes import bookings_bp
 from routes.admin_routes import admin_bp
+from routes.notification_routes import notification_bp
+from routes.approval_routes import approval_bp
 
 _BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 _FRONTEND_DIR = os.path.normpath(os.path.join(_BACKEND_DIR, '..', 'front'))
@@ -30,6 +32,8 @@ def create_app():
     app.register_blueprint(rooms_bp)
     app.register_blueprint(bookings_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(notification_bp)
+    app.register_blueprint(approval_bp)
 
     @app.route('/api/health', methods=['GET'])
     def health():
@@ -76,9 +80,21 @@ if __name__ == '__main__':
     print("\n" + "=" * 50)
     print("  会议室预定系统")
     print("=" * 50)
+<<<<<<< HEAD
     print("  用户端: http://127.0.0.1:5000/   管理端: http://127.0.0.1:5000/admin")
     print("  局域网: http://0.0.0.0:5000")
     print("  测试账号: user / 123456   admin / 123456")
     print("  公网 HTTPS: 见 docs/PUBLIC_HTTPS.md（Cloudflare Tunnel / ngrok）")
     print("=" * 50 + "\n")
     app.run(host='0.0.0.0', port=5000, debug=debug)
+=======
+    print("  地址: http://127.0.0.1:5000")
+    print("  API:  http://127.0.0.1:5000/api")
+    print("  测试账号:")
+    print("    计算机学院: zhangsan / 123456")
+    print("    软件学院: lisi / 123456")
+    print("    信息学院: wangwu / 123456")
+    print("    管理员: admin / 123456 (计算机学院)")
+    print("=" * 50 + "\n")
+    app.run(host='0.0.0.0', port=5000, debug=True)
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed

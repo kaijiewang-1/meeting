@@ -5,6 +5,7 @@ from database import get_db
 from config import Config
 
 
+<<<<<<< HEAD
 def get_visible_college_codes(room_id):
     conn = get_db()
     cursor = conn.cursor()
@@ -49,6 +50,10 @@ def _enrich_room(row_dict):
 
 def get_all_rooms(filters=None, for_user=None):
     """获取所有会议室（支持筛选）"""
+=======
+def get_all_rooms(filters=None, user_college=None, is_admin=False):
+    """获取所有会议室（支持筛选和可见性）"""
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     conn = get_db()
     cursor = conn.cursor()
 
@@ -61,6 +66,16 @@ def get_all_rooms(filters=None, for_user=None):
         WHERE 1=1
     '''
     params = []
+
+    # 非管理员：只能看到自己学院可见的会议室
+    # 管理员：可以看到所有会议室（用于管理）
+    if not is_admin and user_college:
+        sql += ' AND (r.visible_colleges = "" OR r.visible_colleges = ? OR r.visible_colleges LIKE ? OR r.visible_colleges LIKE ? OR r.visible_colleges = ?)'
+        params.append('')
+        params.append(user_college)
+        params.append(f'{user_college},%')
+        params.append('%,' + user_college)
+        params.append(user_college)
 
     if filters:
         if filters.get('building'):
@@ -134,7 +149,11 @@ def get_room_by_id(room_id, for_user=None):
     return r
 
 
+<<<<<<< HEAD
 def get_available_rooms(filters=None, for_user=None):
+=======
+def get_available_rooms(filters=None, user_college=None, is_admin=False):
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     """获取可用会议室（排除冲突和维护）"""
     conn = get_db()
     cursor = conn.cursor()
@@ -150,6 +169,15 @@ def get_available_rooms(filters=None, for_user=None):
     '''
     params = [Config.ROOM_STATUS_AVAILABLE]
 
+    # 非管理员：只能看到自己学院可见的会议室
+    if not is_admin and user_college:
+        sql += ' AND (r.visible_colleges = "" OR r.visible_colleges = ? OR r.visible_colleges LIKE ? OR r.visible_colleges LIKE ? OR r.visible_colleges = ?)'
+        params.append('')
+        params.append(user_college)
+        params.append(f'{user_college},%')
+        params.append('%,' + user_college)
+        params.append(user_college)
+
     if filters:
         if filters.get('building'):
             sql += ' AND r.building = ?'
@@ -161,7 +189,6 @@ def get_available_rooms(filters=None, for_user=None):
             sql += ' AND r.capacity >= ?'
             params.append(int(filters['capacity']))
         if filters.get('facilities'):
-            # 设备筛选：需要会议室包含所有指定设备
             for fac in filters['facilities']:
                 sql += ' AND r.id IN (SELECT room_id FROM room_facilities WHERE facility_code = ?)'
                 params.append(fac)
@@ -256,6 +283,7 @@ def create_room(data):
     """创建会议室"""
     conn = get_db()
     cursor = conn.cursor()
+<<<<<<< HEAD
     req_appr = 1 if int(data.get('requires_approval') or 0) else 0
     vis_scope = data.get('visibility_scope') or data.get('visibilityScope') or Config.ROOM_VISIBILITY_ALL
     if vis_scope not in (Config.ROOM_VISIBILITY_ALL, Config.ROOM_VISIBILITY_COLLEGES):
@@ -278,6 +306,21 @@ def create_room(data):
         data.get('weekday_open_hours') or data.get('weekdayOpenHours') or data.get('open_hours', '08:00-18:00'),
         data.get('weekend_open_hours') or data.get('weekendOpenHours') or '09:00-17:00',
         data.get('image', '🏢'), req_appr, approver_user_id, vis_scope,
+=======
+    
+    # 处理可见学院
+    visible_colleges = ','.join(data.get('visible_colleges', [])) if data.get('visible_colleges') else ''
+    
+    cursor.execute('''
+        INSERT INTO rooms (name, building, floor, capacity, status, need_approval, visible_colleges, description, open_hours, image)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        data['name'], data['building'], data['floor'],
+        int(data['capacity']), data.get('status', 'AVAILABLE'),
+        int(data.get('need_approval', 1)), visible_colleges,
+        data.get('description', ''), data.get('open_hours', '08:00-22:00'),
+        data.get('image', '🏢')
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     ))
     room_id = cursor.lastrowid
 
@@ -308,6 +351,7 @@ def update_room(room_id, data):
 
     updates = []
     params = []
+<<<<<<< HEAD
     for field in ['name', 'building', 'floor', 'capacity', 'status', 'description', 'open_hours',
                   'weekday_open_hours', 'weekend_open_hours', 'image']:
         if field in data:
@@ -346,6 +390,23 @@ def update_room(room_id, data):
             params.append(vs)
             if vs == Config.ROOM_VISIBILITY_ALL:
                 cursor.execute('DELETE FROM room_visible_colleges WHERE room_id = ?', (room_id,))
+=======
+    
+    # 可更新的字段列表
+    updatable_fields = ['name', 'building', 'floor', 'capacity', 'status', 
+                        'need_approval', 'description', 'open_hours', 'image']
+    
+    for field in updatable_fields:
+        if field in data:
+            updates.append(f'{field} = ?')
+            params.append(data[field])
+    
+    # 处理可见学院
+    if 'visible_colleges' in data:
+        visible_colleges = ','.join(data['visible_colleges']) if data['visible_colleges'] else ''
+        updates.append('visible_colleges = ?')
+        params.append(visible_colleges)
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
 
     if updates:
         updates.append('updated_at = datetime("now")')
@@ -394,3 +455,13 @@ def update_room_status(room_id, status):
     )
     conn.commit()
     conn.close()
+
+
+def get_room_need_approval(room_id):
+    """获取会议室是否需要审批"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT need_approval FROM rooms WHERE id = ?', (room_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row['need_approval'] == 1 if row else True

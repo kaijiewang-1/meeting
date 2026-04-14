@@ -64,6 +64,7 @@ export default async function init() {
       const floor = document.getElementById('m_floor').value.trim();
       const capacity = parseInt(document.getElementById('m_capacity').value);
       const status = document.getElementById('m_status').value;
+<<<<<<< HEAD
       const description = document.getElementById('m_desc').value.trim();
       const image = document.getElementById('m_image').value.trim() || '🏢';
       
@@ -78,6 +79,13 @@ export default async function init() {
       const approverUserId = document.getElementById('m_approver_user') ? 
         parseInt(document.getElementById('m_approver_user').value) : null;
       
+=======
+      const need_approval = parseInt(document.getElementById('m_need_approval').value);
+      const openHours = document.getElementById('m_hours').value.trim();
+      const description = document.getElementById('m_desc').value.trim();
+      const image = document.getElementById('m_image').value.trim() || '🏢';
+      
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
       // 收集可见学院
       const allCheckbox = document.getElementById('m_visible_all');
       let visible_colleges = [];
@@ -96,12 +104,17 @@ export default async function init() {
         }
       });
       
+<<<<<<< HEAD
       if (!name || !building || !floor || !capacity) {
+=======
+      if (!name || !floor || !capacity) {
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         Toast.error('请填写必填项');
         return;
       }
       
       const data = { 
+<<<<<<< HEAD
         name, building, floor, capacity, status, description, image,
         weekday_open_hours: weekdayOpenHours,
         weekend_open_hours: finalWeekendHours,
@@ -113,6 +126,13 @@ export default async function init() {
         data.approver_user_id = approverUserId;
       }
       
+=======
+        name, building, floor, capacity, status, 
+        need_approval, open_hours: openHours, description, image,
+        facilities, visible_colleges
+      };
+      
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
       try {
         if (id) {
           await api.updateRoom(id, data);
@@ -161,7 +181,10 @@ async function loadAdminRooms() {
               <th>位置</th>
               <th>容量</th>
               <th>设备</th>
+<<<<<<< HEAD
               <th>开放时间</th>
+=======
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
               <th>审批</th>
               <th>可见学院</th>
               <th>状态</th>
@@ -183,11 +206,11 @@ async function loadAdminRooms() {
                       <div style="font-size:11px;color:var(--color-text-tertiary)">${utils.escapeHtml(r.description || '').substring(0, 30)}</div>
                     </div>
                   </div>
-                </td>
+                 </td>
                 <td>
                   <div style="font-size:13px">${utils.escapeHtml(r.building)}</div>
                   <div style="font-size:12px;color:var(--color-text-tertiary)">${utils.escapeHtml(r.floor)}</div>
-                </td>
+                 </td>
                 <td><strong>${r.capacity}人</strong></td>
                 <td>
                   <div style="display:flex;flex-wrap:wrap;gap:4px">
@@ -195,6 +218,7 @@ async function loadAdminRooms() {
                     ${r.facilities && r.facilities.length > 2 ? `<span style="font-size:10px;color:var(--color-text-tertiary)">+${r.facilities.length - 2}</span>` : ''}
                     ${!r.facilities || !r.facilities.length ? '<span style="font-size:12px;color:var(--color-text-tertiary)">-</span>' : ''}
                   </div>
+<<<<<<< HEAD
                 </td>
                 <td style="font-size:12px">
                   <div>工作日: ${utils.escapeHtml(r.weekday_open_hours || r.open_hours || '08:00-18:00')}</div>
@@ -210,6 +234,19 @@ async function loadAdminRooms() {
                     ${r.visible_colleges && r.visible_colleges.length ? `${r.visible_colleges.length}个学院` : '全部学院'}
                   </span>
                 </td>
+=======
+                 </td>
+                <td>
+                  <span class="tag ${r.need_approval ? 'tag-warning' : 'tag-success'}">
+                    ${r.need_approval ? '需审批' : '免审批'}
+                  </span>
+                 </td>
+                <td>
+                  <span style="font-size:12px;color:var(--color-text-secondary)">
+                    ${r.visible_colleges && r.visible_colleges !== '' ? '部分学院' : '全部学院'}
+                  </span>
+                 </td>
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
                 <td>
                   <select class="form-select" style="width:120px;padding:4px 8px;font-size:12px"
                           onchange="AdminRoomsPage.changeStatus(${r.id}, this.value)">
@@ -217,14 +254,14 @@ async function loadAdminRooms() {
                     <option value="BUSY" ${r.status === 'BUSY' ? 'selected' : ''}>使用中</option>
                     <option value="MAINTENANCE" ${r.status === 'MAINTENANCE' ? 'selected' : ''}>维护中</option>
                   </select>
-                </td>
+                 </td>
                 <td>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-secondary btn-sm" onclick="AdminRoomsPage.showEditModal(${r.id})">编辑</button>
                     <button class="btn btn-danger btn-sm" onclick="AdminRoomsPage.deleteRoom(${r.id}, '${utils.escapeHtml(r.name)}')">删除</button>
                   </div>
-                </td>
-              </tr>
+                 </td>
+               </tr>
             `).join('')}
           </tbody>
         </table>
@@ -248,6 +285,7 @@ async function loadColleges() {
   }
 }
 
+<<<<<<< HEAD
 async function loadApprovers() {
   try {
     const res = await fetch('http://127.0.0.1:5000/api/admin/approvers', {
@@ -279,6 +317,22 @@ async function showModal(title, room = null) {
   const weekdayHours = room?.weekday_open_hours || room?.open_hours || '08:00-18:00';
   const weekendHours = room?.weekend_open_hours || '';
   const isWeekendClosed = !weekendHours || weekendHours === '';
+=======
+async function showModal(title, room = null) {
+  // 移除已存在的弹窗
+  const existing = document.getElementById('roomModal');
+  if (existing) existing.remove();
+  
+  // 加载学院列表
+  const colleges = await loadColleges();
+  
+  // 解析已有的可见学院
+  let existingColleges = [];
+  if (room && room.visible_colleges && room.visible_colleges !== '') {
+    existingColleges = room.visible_colleges.split(',').map(id => id.trim());
+  }
+  const isAllVisible = !room || !room.visible_colleges || room.visible_colleges === '';
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
   
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -302,8 +356,16 @@ async function showModal(title, room = null) {
         
         <div class="form-row">
           <div class="form-group">
+<<<<<<< HEAD
             <label class="form-label">楼宇 <span style="color:var(--color-danger)">*</span></label>
             <input type="text" id="m_building" class="form-input" placeholder="如：总部大楼、信息楼" value="${room?.building || ''}" required>
+=======
+            <label class="form-label">楼宇</label>
+            <select id="m_building" class="form-select">
+              <option value="总部大楼" ${room?.building === '总部大楼' ? 'selected' : ''}>总部大楼</option>
+              <option value="分部大楼" ${room?.building === '分部大楼' ? 'selected' : ''}>分部大楼</option>
+            </select>
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
           </div>
           <div class="form-group">
             <label class="form-label">楼层 <span style="color:var(--color-danger)">*</span></label>
@@ -326,6 +388,7 @@ async function showModal(title, room = null) {
           </div>
         </div>
         
+<<<<<<< HEAD
         <!-- 开放时间（工作日/周末区分） -->
         <div class="form-group">
           <label class="form-label">开放时间</label>
@@ -351,11 +414,23 @@ async function showModal(title, room = null) {
         <div class="form-group">
           <label class="form-label">图标</label>
           <input type="text" id="m_image" class="form-input" placeholder="如：🌟" value="${room?.image || '🏢'}" maxlength="2">
+=======
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">开放时间</label>
+            <input type="text" id="m_hours" class="form-input" placeholder="如：08:00-22:00" value="${room?.open_hours || '08:00-22:00'}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">图标</label>
+            <input type="text" id="m_image" class="form-input" placeholder="如：🌟" value="${room?.image || '🏢'}" maxlength="2">
+          </div>
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         </div>
         
         <!-- 审批设置 -->
         <div class="form-group">
           <label class="form-label">审批设置</label>
+<<<<<<< HEAD
           <div style="border:1px solid var(--color-border);border-radius:8px;padding:12px">
             <label class="checkbox-group" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
               <input type="checkbox" id="m_requires_approval" ${room?.requires_approval ? 'checked' : ''}>
@@ -371,6 +446,12 @@ async function showModal(title, room = null) {
               </select>
             </div>
           </div>
+=======
+          <select id="m_need_approval" class="form-select">
+            <option value="1" ${room?.need_approval == 1 ? 'selected' : ''}>需要审批</option>
+            <option value="0" ${room?.need_approval == 0 ? 'selected' : ''}>不需要审批</option>
+          </select>
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
           <div class="form-hint">需要审批的预定需要管理员审核后才能生效</div>
         </div>
         
@@ -438,6 +519,7 @@ async function showModal(title, room = null) {
   `;
   document.body.appendChild(modal);
   
+<<<<<<< HEAD
   // 审批设置复选框逻辑
   const requiresApprovalCheckbox = document.getElementById('m_requires_approval');
   const approverContainer = document.getElementById('approverSelectContainer');
@@ -459,6 +541,8 @@ async function showModal(title, room = null) {
     });
   }
   
+=======
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
   // "全部学院"复选框逻辑
   const allCheckbox = document.getElementById('m_visible_all');
   const collegeCheckboxes = document.querySelectorAll('.college-checkbox');
@@ -484,6 +568,10 @@ async function showModal(title, room = null) {
         if (cb.checked) {
           allCheckbox.checked = false;
         }
+<<<<<<< HEAD
+=======
+        // 检查是否所有学院都未选中
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         const anyChecked = Array.from(collegeCheckboxes).some(c => c.checked);
         if (!anyChecked && !allCheckbox.checked) {
           allCheckbox.checked = true;

@@ -77,7 +77,8 @@ const auth = {
   login(user, token, role = 'user') {
     store.set('user', user);
     store.set('token', token);
-    store.set('role', role);
+    // 将角色转为小写，统一为 'admin' 或 'user'
+    store.set('role', role.toLowerCase());
   },
   logout() {
     store.clear();
