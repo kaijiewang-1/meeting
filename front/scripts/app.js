@@ -19,11 +19,6 @@ const App = {
     await router._resolve();
     this.setupNavActive();
     this.setupUserMenu();
-<<<<<<< HEAD
-=======
-    this.setupMobileMenu();
-    this.setupNotification();
->>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
   },
 
   renderLayout() {
@@ -33,7 +28,7 @@ const App = {
 
     const user = auth.getUser() || { name: '用户', username: 'user' };
     const isMobile = window.innerWidth <= 768;
-    const isAdmin = role === 'admin';
+    const isAdmin = auth.isAdmin();
 
     // 用户端菜单（手机端显示，包括管理员在手机上也显示）
     const userMenuHtml = isMobile ? `
@@ -113,7 +108,6 @@ const App = {
       </a>
     ` : '';
 
-    const isAdmin = auth.isAdmin();
     const adminApp = meetingApp.isAdminApp();
     const sidebarNav = adminApp
       ? `
@@ -401,7 +395,6 @@ const App = {
     // handled inline
   },
 
-<<<<<<< HEAD
   closeMobileSidebar() {
     document.getElementById('sidebar')?.classList.remove('open');
     document.getElementById('sidebarBackdrop')?.classList.remove('is-visible');
@@ -450,175 +443,12 @@ const App = {
       this.syncMobileSidebarVisibility();
       document.dispatchEvent(new CustomEvent('app:navigate', { detail: {} }));
     });
-=======
-  setupMobileMenu() {
-    setTimeout(() => {
-      const toggleBtn = document.getElementById('menuToggleBtn');
-      const sidebar = document.getElementById('sidebar');
-      
-      if (!toggleBtn || !sidebar) return;
-
-      if (this._handleMenuClick) {
-        toggleBtn.removeEventListener('click', this._handleMenuClick);
-      }
-      
-      this._handleMenuClick = () => {
-        sidebar.classList.toggle('open');
-      };
-      
-      toggleBtn.addEventListener('click', this._handleMenuClick);
-
-      const handleResize = () => {
-        if (window.innerWidth <= 768) {
-          toggleBtn.style.display = 'flex';
-          sidebar.classList.remove('open');
-        } else {
-          toggleBtn.style.display = 'none';
-          sidebar.classList.remove('open');
-        }
-      };
-      
-      handleResize();
-      if (this._handleResize) {
-        window.removeEventListener('resize', this._handleResize);
-      }
-      this._handleResize = handleResize;
-      window.addEventListener('resize', this._handleResize);
-    }, 100);
   },
 
-  setupNotification() {
-    setTimeout(() => {
-      const notificationBtn = document.getElementById('notificationBtn');
-      
-      if (!notificationBtn) {
-        console.log('通知按钮未找到，稍后重试');
-        return;
-      }
-      
-      if (this._notificationHandler) {
-        notificationBtn.removeEventListener('click', this._notificationHandler);
-      }
-      
-      this._notificationHandler = async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        try {
-          const module = await import('./pages/notification-popup.js');
-          if (module.showNotificationPopup) {
-            module.showNotificationPopup();
-          } else {
-            console.error('通知模块导出不正确');
-            this.showSimpleNotificationPopup();
-          }
-        } catch (err) {
-          console.error('加载通知模块失败', err);
-          this.showSimpleNotificationPopup();
-        }
-      };
-      
-      notificationBtn.addEventListener('click', this._notificationHandler);
-      console.log('✅ 通知按钮已绑定');
-      
-      this.updateUnreadCount();
-      
-      if (this._unreadInterval) {
-        clearInterval(this._unreadInterval);
-      }
-      this._unreadInterval = setInterval(() => this.updateUnreadCount(), 30000);
-    }, 200);
-  },
-
-  showSimpleNotificationPopup() {
-    const existingPopup = document.getElementById('simpleNotificationPopup');
-    if (existingPopup) existingPopup.remove();
-    
-    const popup = document.createElement('div');
-    popup.id = 'simpleNotificationPopup';
-    popup.style.cssText = `
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      width: 320px;
-      max-width: calc(100vw - 40px);
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      z-index: 10000;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
-    `;
-    popup.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb">
-        <strong style="font-size:14px">消息通知</strong>
-        <button style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b7280" onclick="this.parentElement.parentElement.remove()">✕</button>
-      </div>
-      <div style="color:#6b7280;text-align:center;padding:40px 20px;font-size:14px">
-        📭 暂无新消息
-      </div>
-    `;
-    document.body.appendChild(popup);
-    
-    setTimeout(() => {
-      const closePopup = (e) => {
-        if (!popup.contains(e.target) && e.target !== document.getElementById('notificationBtn')) {
-          popup.remove();
-          document.removeEventListener('click', closePopup);
-        }
-      };
-      document.addEventListener('click', closePopup);
-    }, 100);
-  },
-
-  async updateUnreadCount() {
-    try {
-      const token = auth.getToken();
-      if (!token) return;
-      
-      const res = await fetch('http://127.0.0.1:5000/api/notifications/unread-count', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const count = data.data?.count || 0;
-      const badge = document.getElementById('notificationBadge');
-      if (badge) {
-        if (count > 0) {
-          badge.textContent = count > 99 ? '99+' : count;
-          badge.style.display = 'flex';
-        } else {
-          badge.style.display = 'none';
-        }
-      }
-      
-      // 更新审批待处理数量（仅管理员在电脑端）
-      if (auth.isAdmin() && window.innerWidth > 768) {
-        const pendingRes = await fetch('http://127.0.0.1:5000/api/approvals/pending', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const pendingData = await pendingRes.json();
-        const pendingCount = pendingData.data?.length || 0;
-        const approvalBadge = document.getElementById('approvalBadge');
-        if (approvalBadge) {
-          if (pendingCount > 0) {
-            approvalBadge.textContent = pendingCount > 99 ? '99+' : pendingCount;
-            approvalBadge.style.display = 'inline-flex';
-          } else {
-            approvalBadge.style.display = 'none';
-          }
-        }
-      }
-    } catch (e) {
-      console.error('获取未读数失败', e);
-    }
-  },
-
+  /** 路由切换后刷新侧栏/底部导航高亮与移动端布局（布局由 renderLayout 一次性生成） */
   bindMenuAfterRoute() {
-    setTimeout(() => {
-      this.setupMobileMenu();
-      this.setupNotification();
-    }, 150);
->>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
+    this.syncMobileSidebarVisibility();
+    document.dispatchEvent(new CustomEvent('app:navigate', { detail: {} }));
   },
 
   toggleUserDropdown() {
