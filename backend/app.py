@@ -43,10 +43,21 @@ def create_app():
     def index():
         return send_from_directory(_FRONTEND_DIR, 'index.html')
 
+    @app.route('/login')
+    def login_page():
+        """浏览器访问 /login 时进入用户端并打开登录页（hash 路由）"""
+        return Response(
+            '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'
+            '<meta http-equiv="refresh" content="0;url=/#/login">'
+            '<script>location.replace(location.origin + "/#/login");</script>'
+            '</head><body style="font-family:system-ui;padding:24px">正在跳转登录页…</body></html>',
+            mimetype='text/html',
+        )
+
     @app.route('/admin')
     @app.route('/admin/')
     def admin_spa():
-        """管理端入口（与用户端 `/` 分离，使用 admin.html，避免 index 的「仅手机」限制）"""
+        """管理端入口（与用户端 `/` 分离，加载 admin.html）"""
         return send_from_directory(_FRONTEND_DIR, 'admin.html')
 
     @app.route('/scripts/<path:subpath>')
@@ -80,7 +91,7 @@ if __name__ == '__main__':
     print("\n" + "=" * 50)
     print("  会议室预定系统")
     print("=" * 50)
-    print("  用户端: http://127.0.0.1:5000/   管理端: http://127.0.0.1:5000/admin")
+    print("  用户端: http://127.0.0.1:5000/  登录: http://127.0.0.1:5000/login  管理端: http://127.0.0.1:5000/admin")
     print("  局域网: http://0.0.0.0:5000")
     print("  测试账号: user / 123456   admin / 123456")
     print("  公网 HTTPS: 见 docs/PUBLIC_HTTPS.md（Cloudflare Tunnel / ngrok）")
