@@ -31,7 +31,7 @@ def admin_list_approvers():
 @require_admin
 def admin_get_rooms():
     """获取所有会议室（管理员）"""
-    rooms = room_service.get_all_rooms(is_admin=True)
+    rooms = room_service.get_all_rooms(for_user=g.current_user)
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 

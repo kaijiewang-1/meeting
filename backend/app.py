@@ -46,8 +46,8 @@ def create_app():
     @app.route('/admin')
     @app.route('/admin/')
     def admin_spa():
-        """管理端入口（与用户端 `/` 分离，同源静态资源）"""
-        return send_from_directory(_FRONTEND_DIR, 'index.html')
+        """管理端入口（与用户端 `/` 分离，使用 admin.html，避免 index 的「仅手机」限制）"""
+        return send_from_directory(_FRONTEND_DIR, 'admin.html')
 
     @app.route('/scripts/<path:subpath>')
     def serve_scripts(subpath):
