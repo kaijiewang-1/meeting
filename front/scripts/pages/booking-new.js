@@ -293,7 +293,9 @@ export default async function init() {
                           <polyline points="22 4 12 14.01 9 11.01"/>
                         </svg> 提交预定`;
 
-        Toast.success(`预定成功！预定编号：${res.data.bookingNo}`);
+        Toast.success(
+          res.message || `预定成功！预定编号：${res.data.bookingNo}`,
+        );
         setTimeout(() => router.navigate('/bookings/my'), 1500);
       } catch (err) {
         btn.disabled = false;

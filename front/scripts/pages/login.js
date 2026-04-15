@@ -147,7 +147,12 @@ export default function init() {
         auth.login(res.data.user, res.data.token, res.data.role);
         Toast.success('登录成功，正在跳转...');
         setTimeout(() => {
-          window.location.hash = '#/home';
+          if (String(res.data.role || '').toUpperCase() === 'ADMIN') {
+            // 管理员直接进入管理后端
+            window.location.href = '/admin#/admin/rooms';
+          } else {
+            window.location.hash = '#/home';
+          }
         }, 300);
       } catch (err) {
         Toast.error(err.message || '登录失败，请检查用户名和密码');

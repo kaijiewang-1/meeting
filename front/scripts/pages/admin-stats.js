@@ -8,8 +8,7 @@ export default async function init() {
 
   App.renderLayout();
   App.updateBreadcrumb([
-    { label: '首页', href: '#/home' },
-    { label: '管理端', href: '#/admin/stats' },
+    { label: '管理端', href: '#/admin/rooms' },
     { label: '数据统计' },
   ]);
 

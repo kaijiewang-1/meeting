@@ -61,6 +61,7 @@ async function request(method, path, body = null) {
 // 字段名映射：snake_case (后端) → camelCase (前端)
 function mapRoom(r) {
   if (!r) return null;
+  const ra = r.requires_approval ?? r.requiresApproval;
   return {
     id: r.id,
     name: r.name,
@@ -70,8 +71,15 @@ function mapRoom(r) {
     facilities: r.facilities || [],
     status: r.status,
     description: r.description || '',
-    openHours: r.open_hours || r.openHours || '08:00-22:00',
+    openHours: r.open_hours || r.openHours || r.weekday_open_hours || '08:00-18:00',
+    weekdayOpenHours: r.weekday_open_hours || r.weekdayOpenHours || r.openHours || '08:00-18:00',
+    weekendOpenHours: r.weekend_open_hours || r.weekendOpenHours || '09:00-17:00',
     image: r.image || '🏢',
+    requiresApproval: ra === true || ra === 1 || ra === '1',
+    approverUserId: r.approver_user_id ?? r.approverUserId ?? null,
+    approverName: r.approver_name || r.approverName || '',
+    visibilityScope: r.visibility_scope || r.visibilityScope || 'ALL',
+    visibleColleges: r.visible_colleges || r.visibleColleges || [],
   };
 }
 
@@ -91,8 +99,11 @@ function mapBooking(b) {
     status: b.status,
     checkInStatus: b.check_in_status || b.checkInStatus || 'PENDING',
     remark: b.remark || '',
+    approvalRemark: b.approval_remark || b.approvalRemark || '',
+    approverName: b.approver_name || b.approverName || '',
     canceledAt: b.canceled_at || b.canceledAt,
     finishedAt: b.finished_at || b.finishedAt,
+    approvedAt: b.approved_at || b.approvedAt,
     createdAt: b.created_at || b.createdAt,
     updatedAt: b.updated_at || b.updatedAt,
   };
@@ -214,23 +225,37 @@ const api = {
 
   // ── 管理 ──────────────────────────────────────────────
 
+  async getAdminApprovers() {
+    const json = await request('GET', '/admin/approvers');
+    return { ...json, data: json.data || [] };
+  },
+
   async getAdminRooms() {
     const json = await request('GET', '/admin/rooms');
     return { ...json, data: (json.data || []).map(mapRoom) };
   },
 
   async createRoom(data) {
-    const json = await request('POST', '/admin/rooms', {
+    const body = {
       name: data.name,
       building: data.building,
       floor: data.floor,
       capacity: data.capacity,
       description: data.description || '',
-      open_hours: data.openHours || data.open_hours || '08:00-22:00',
+      open_hours: data.openHours || data.open_hours || data.weekday_open_hours || '08:00-22:00',
+      weekday_open_hours: data.weekday_open_hours || data.weekdayOpenHours || '08:00-18:00',
+      weekend_open_hours: data.weekend_open_hours || data.weekendOpenHours || '09:00-17:00',
       image: data.image || '🏢',
       facilities: data.facilities || [],
       status: data.status || 'AVAILABLE',
-    });
+      requires_approval: data.requiresApproval ? 1 : 0,
+      approver_user_id: data.requiresApproval && data.approverUserId != null && data.approverUserId !== ''
+        ? parseInt(data.approverUserId, 10)
+        : null,
+      visibility_scope: data.visibilityScope || data.visibility_scope || 'ALL',
+      visible_colleges: data.visibleColleges || data.visible_colleges || [],
+    };
+    const json = await request('POST', '/admin/rooms', body);
     return { ...json, data: mapRoom(json.data) };
   },
 
@@ -244,8 +269,22 @@ const api = {
     if (data.description !== undefined) body.description = data.description;
     if (data.open_hours !== undefined) body.open_hours = data.open_hours;
     if (data.openHours !== undefined) body.open_hours = data.openHours;
+    if (data.weekday_open_hours !== undefined) body.weekday_open_hours = data.weekday_open_hours;
+    if (data.weekdayOpenHours !== undefined) body.weekday_open_hours = data.weekdayOpenHours;
+    if (data.weekend_open_hours !== undefined) body.weekend_open_hours = data.weekend_open_hours;
+    if (data.weekendOpenHours !== undefined) body.weekend_open_hours = data.weekendOpenHours;
     if (data.image !== undefined) body.image = data.image;
     if (data.facilities !== undefined) body.facilities = data.facilities;
+    if (data.requiresApproval !== undefined) body.requires_approval = data.requiresApproval ? 1 : 0;
+    if (data.approverUserId !== undefined) {
+      body.approver_user_id = data.approverUserId === '' || data.approverUserId == null
+        ? null
+        : parseInt(data.approverUserId, 10);
+    }
+    if (data.visibilityScope !== undefined) body.visibility_scope = data.visibilityScope;
+    if (data.visibility_scope !== undefined) body.visibility_scope = data.visibility_scope;
+    if (data.visibleColleges !== undefined) body.visible_colleges = data.visibleColleges;
+    if (data.visible_colleges !== undefined) body.visible_colleges = data.visible_colleges;
     const json = await request('PUT', `/admin/rooms/${id}`, body);
     return { ...json, data: mapRoom(json.data) };
   },
@@ -263,6 +302,16 @@ const api = {
     const path = `/admin/bookings${qs.toString() ? '?' + qs.toString() : ''}`;
     const json = await request('GET', path);
     return { ...json, data: (json.data || []).map(mapBooking) };
+  },
+
+  async approveBooking(id) {
+    const json = await request('POST', `/admin/bookings/${id}/approve`);
+    return { ...json, data: mapBooking(json.data) };
+  },
+
+  async rejectBooking(id, reason = '') {
+    const json = await request('POST', `/admin/bookings/${id}/reject`, { reason });
+    return { ...json, data: mapBooking(json.data) };
   },
 };
 

@@ -28,7 +28,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       if (!window.location.hash) {
         if (auth.isLoggedIn()) {
-          window.location.hash = '#/home';
+          if (auth.isAdmin()) {
+            // 管理员登入后直接进入管理后端
+            window.location.href = '/admin#/admin/rooms';
+          } else {
+            window.location.hash = '#/home';
+          }
         } else {
           window.location.hash = '#/login';
         }

@@ -65,6 +65,10 @@ export async function init(id) {
                 <span class="info-label">开放时间</span>
                 <span class="info-value" id="infoHours">-</span>
               </div>
+              <div class="info-item" style="grid-column:1/-1">
+                <span class="info-label">预定与可见性</span>
+                <span class="info-value" id="infoPolicy" style="white-space:normal;line-height:1.5">-</span>
+              </div>
             </div>
 
             <div class="divider"></div>
@@ -131,7 +135,18 @@ function renderRoomInfo(room) {
   document.getElementById('infoBuilding').textContent = room.building;
   document.getElementById('infoFloor').textContent = room.floor;
   document.getElementById('infoCapacity').textContent = `${room.capacity} 人`;
-  document.getElementById('infoHours').textContent = room.openHours;
+  document.getElementById('infoHours').textContent = `工作日: ${room.weekdayOpenHours || room.openHours} 周末: ${room.weekendOpenHours || '09:00-17:00'}`;
+  const policyEl = document.getElementById('infoPolicy');
+  if (policyEl) {
+    const bits = [];
+    bits.push(room.requiresApproval ? '提交预定后需管理员审批通过方可生效' : '预定提交后立即占用时段');
+    if (room.visibilityScope === 'COLLEGES' && (room.visibleColleges || []).length) {
+      bits.push(`仅对学院代码为 ${(room.visibleColleges || []).join('、')} 的账号可见`);
+    } else {
+      bits.push('对符合条件的用户均可见');
+    }
+    policyEl.textContent = bits.join('；');
+  }
   document.getElementById('roomDesc').textContent = room.description || '暂无说明';
 
   const statusTag = document.getElementById('roomStatusTag');

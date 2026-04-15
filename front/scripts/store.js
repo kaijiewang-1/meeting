@@ -63,6 +63,18 @@ class Store {
 
 const store = new Store();
 
+/** 用户端 `/` 与 管理端 `/admin` 入口区分（pathname） */
+const meetingApp = {
+  isAdminApp() {
+    try {
+      const p = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+      return p.endsWith('/admin');
+    } catch {
+      return false;
+    }
+  },
+};
+
 // Auth helpers
 const auth = {
   getUser: () => store.get('user'),
@@ -81,9 +93,14 @@ const auth = {
   },
   logout() {
     store.clear();
-    window.location.hash = '#/login';
+    if (meetingApp.isAdminApp()) {
+      window.location.href = '/admin#/login';
+    } else {
+      window.location.hash = '#/login';
+    }
   },
 };
 
 window.store = store;
 window.auth = auth;
+window.meetingApp = meetingApp;

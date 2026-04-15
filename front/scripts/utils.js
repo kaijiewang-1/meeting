@@ -58,6 +58,8 @@ const utils = {
       FINISHED: '已结束',
       CANCELED: '已取消',
       EXPIRED: '已过期',
+      PENDING_APPROVAL: '待审批',
+      REJECTED: '已驳回',
     };
     return map[status] || status;
   },
@@ -73,6 +75,8 @@ const utils = {
       FINISHED: 'tag-neutral',
       CANCELED: 'tag-danger',
       EXPIRED: 'tag-neutral',
+      PENDING_APPROVAL: 'tag-warning',
+      REJECTED: 'tag-danger',
     };
     return map[status] || 'tag-neutral';
   },

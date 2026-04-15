@@ -8,15 +8,14 @@ export default async function init() {
 
   App.renderLayout();
   App.updateBreadcrumb([
-    { label: '首页', href: '#/home' },
-    { label: '管理端', href: '#/admin/stats' },
-    { label: '预定记录' },
+    { label: '管理端', href: '#/admin/rooms' },
+    { label: '预定与审批' },
   ]);
 
   App.setPageView(`
     <div class="page-header">
       <h1 class="page-title">预定记录</h1>
-      <p class="page-subtitle">查看和管理所有用户的会议室预定</p>
+      <p class="page-subtitle">查看全部预定；待审批项可通过或驳回（不提供代用户取消）</p>
     </div>
 
     <div class="filter-bar" style="margin-bottom:20px">
@@ -28,10 +27,12 @@ export default async function init() {
         <span class="filter-label">状态</span>
         <select class="form-select" id="filterStatus" style="min-width:130px">
           <option value="">全部状态</option>
+          <option value="PENDING_APPROVAL">待审批</option>
           <option value="BOOKED">已预定</option>
           <option value="CHECKED_IN">已签到</option>
           <option value="FINISHED">已完成</option>
           <option value="CANCELED">已取消</option>
+          <option value="REJECTED">已驳回</option>
           <option value="EXPIRED">已过期</option>
         </select>
       </div>
@@ -52,14 +53,24 @@ export default async function init() {
     viewDetail(id) {
       Toast.info(`预定 ID: ${id}，详情功能开发中`);
     },
-    async cancel(id) {
-      if (!confirm('确定要取消该预定吗？')) return;
+    async approve(id) {
       try {
-        await api.cancelBooking(id);
-        Toast.success('已取消预定');
+        await api.approveBooking(id);
+        Toast.success('已通过审批');
         await loadAdminBookings();
       } catch (e) {
-        Toast.error(e.message || '取消失败');
+        Toast.error(e.message || '操作失败');
+      }
+    },
+    async reject(id) {
+      const reason = window.prompt('驳回原因（可选，将展示给申请人）', '') || '';
+      if (reason === null) return;
+      try {
+        await api.rejectBooking(id, reason.trim());
+        Toast.success('已驳回');
+        await loadAdminBookings();
+      } catch (e) {
+        Toast.error(e.message || '操作失败');
       }
     }
   };
@@ -91,6 +102,7 @@ async function loadAdminBookings() {
               <th>会议主题</th>
               <th>会议室</th>
               <th>预定人</th>
+              <th>审批人</th>
               <th>时间</th>
               <th>人数</th>
               <th>状态</th>
@@ -117,16 +129,26 @@ async function loadAdminBookings() {
                   </div>
                 </td>
                 <td>
+                  ${(b.approverName || b.approver_name) ? `
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <div class="sidebar-avatar" style="width:24px;height:24px;font-size:10px;flex-shrink:0;background:var(--color-success-light);color:var(--color-success)">
+                      ${((b.approverName || b.approver_name) || 'A').charAt(0).toUpperCase()}
+                    </div>
+                    ${utils.escapeHtml(b.approverName || b.approver_name)}
+                  </div>` : '<span style="color:var(--color-text-tertiary)">-</span>'}
+                </td>
+                <td>
                   <div style="font-size:12px">${utils.formatDate(b.startTime)}</div>
                   <div style="font-size:12px;color:var(--color-text-tertiary)">${utils.formatTime(b.startTime)} - ${utils.formatTime(b.endTime)}</div>
                 </td>
                 <td>${b.attendeeCount || 1}人</td>
                 <td><span class="tag ${utils.statusTag(b.status)}">${utils.statusLabel(b.status)}</span></td>
                 <td>
-                  <div style="display:flex;gap:6px">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
                     <button class="btn btn-secondary btn-sm" onclick="AdminBookingsPage.viewDetail(${b.id})">查看</button>
-                    ${b.status !== 'CANCELED' && b.status !== 'FINISHED' ? `
-                      <button class="btn btn-danger btn-sm" onclick="AdminBookingsPage.cancel(${b.id})">取消</button>
+                    ${b.status === 'PENDING_APPROVAL' ? `
+                      <button class="btn btn-primary btn-sm" onclick="AdminBookingsPage.approve(${b.id})">通过</button>
+                      <button class="btn btn-danger btn-sm" onclick="AdminBookingsPage.reject(${b.id})">驳回</button>
                     ` : ''}
                   </div>
                 </td>

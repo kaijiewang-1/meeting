@@ -124,7 +124,7 @@ async function loadBookings(status) {
             ${bookings.map(b => {
               const isPast = new Date(b.endTime) < new Date();
               const isOngoing = new Date(b.startTime) <= new Date() && new Date(b.endTime) >= new Date();
-              const canCancel = ['BOOKED', 'CHECKED_IN'].includes(b.status);
+              const canCancel = ['BOOKED', 'CHECKED_IN', 'PENDING_APPROVAL'].includes(b.status);
               const canCheckIn = b.status === 'BOOKED' && new Date(b.startTime) <= new Date(new Date().getTime() + 15 * 60000);
 
               return `
@@ -135,6 +135,8 @@ async function loadBookings(status) {
                       ${utils.escapeHtml(b.subject)}
                     </div>
                     ${b.attendeeCount ? `<div style="font-size:12px;color:var(--color-text-tertiary)">${b.attendeeCount}人参会</div>` : ''}
+                    ${b.status === 'PENDING_APPROVAL' ? `<div style="font-size:12px;color:var(--color-warning);margin-top:4px">等待管理员审批</div>` : ''}
+                    ${b.status === 'REJECTED' && b.approvalRemark ? `<div style="font-size:12px;color:var(--color-danger);margin-top:4px">驳回说明：${utils.escapeHtml(b.approvalRemark)}</div>` : ''}
                   </td>
                   <td data-label="会议室">
                     <div style="font-weight:500">${utils.escapeHtml(b.roomName)}</div>
