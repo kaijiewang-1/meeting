@@ -46,7 +46,11 @@ def get_current_user():
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
+<<<<<<< HEAD
         'SELECT id, username, name, email, college_code, role, status FROM users WHERE id = ?',
+=======
+        'SELECT id, username, name, email, college, role, status FROM users WHERE id = ?',
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         (payload['user_id'],)
     )
     row = cursor.fetchone()
@@ -87,7 +91,11 @@ def login(username, password):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
+<<<<<<< HEAD
         'SELECT id, username, password_hash, name, email, college_code, role, status FROM users WHERE username = ?',
+=======
+        'SELECT id, username, password_hash, name, email, college, role, status FROM users WHERE username = ?',
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         (username,)
     )
     row = cursor.fetchone()
@@ -105,7 +113,11 @@ def login(username, password):
         'username': row['username'],
         'name': row['name'],
         'email': row['email'],
+<<<<<<< HEAD
         'college_code': row['college_code'] or '',
+=======
+        'college': row['college'],
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
         'role': row['role'],
     }
     token = generate_token(row['id'], row['username'], row['role'])

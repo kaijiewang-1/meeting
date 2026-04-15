@@ -70,6 +70,34 @@ export default async function init() {
               </div>
             </div>
 
+            <!-- 设备筛选（多选） -->
+            <div class="form-group">
+              <label class="form-label">所需设备（可多选）</label>
+              <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;margin-bottom:8px">
+                <label class="checkbox-group">
+                  <input type="checkbox" value="projector" class="facility-checkbox">
+                  <span>📽️ 投影仪</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="whiteboard" class="facility-checkbox">
+                  <span>📝 白板</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="video_conf" class="facility-checkbox">
+                  <span>🎥 视频会议</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="tv" class="facility-checkbox">
+                  <span>📺 电视</span>
+                </label>
+                <label class="checkbox-group">
+                  <input type="checkbox" value="audio" class="facility-checkbox">
+                  <span>🔊 音响系统</span>
+                </label>
+              </div>
+              <div class="form-hint">可多选，只显示满足所有设备要求的会议室</div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">
                 选择会议室 <span style="color:var(--color-danger)">*</span>
@@ -149,6 +177,12 @@ export default async function init() {
       const startTime = normalizeBookingTime(document.getElementById('startTime').value);
       const endTime = normalizeBookingTime(document.getElementById('endTime').value);
       const ac = parseInt(String(document.getElementById('attendeeCount').value || '').trim(), 10);
+      
+      // 获取选中的设备
+      const selectedFacilities = [];
+      document.querySelectorAll('.facility-checkbox:checked').forEach(cb => {
+        selectedFacilities.push(cb.value);
+      });
 
       if (!date) {
         Toast.warning('请选择日期');
@@ -173,13 +207,26 @@ export default async function init() {
       selector.innerHTML = `<div style="padding:20px;text-align:center;color:var(--color-text-tertiary)">查找中...</div>`;
 
       try {
-        const res = await api.getAvailableRooms({
+        const params = {
           date,
           startTime,
           endTime,
           capacity: String(ac),
-        });
-        const rooms = res.data;
+        };
+        if (selectedFacilities.length > 0) {
+          params.facilities = selectedFacilities;
+        }
+        const res = await api.getAvailableRooms(params);
+        let rooms = res.data;
+        
+        // 前端再次过滤设备（确保包含所有选中的设备）
+        if (selectedFacilities.length > 0) {
+          rooms = rooms.filter(room => {
+            const roomFacilities = room.facilities || [];
+            return selectedFacilities.every(f => roomFacilities.includes(f));
+          });
+        }
+        
         if (!rooms.length) {
           selector.innerHTML = `<div style="padding:16px;text-align:center;color:var(--color-text-tertiary);font-size:13px">未找到符合条件的空闲会议室</div>`;
           return;
@@ -196,6 +243,11 @@ export default async function init() {
               <div style="flex:1">
                 <div style="font-weight:600;font-size:13px">${utils.escapeHtml(r.name)}</div>
                 <div style="font-size:12px;color:var(--color-text-secondary)">${utils.escapeHtml(r.building)} · ${utils.escapeHtml(r.floor)} · ${r.capacity}人</div>
+                ${r.facilities && r.facilities.length > 0 ? `
+                <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">
+                  设备: ${r.facilities.map(f => utils.facilityLabel(f)).join(' · ')}
+                </div>
+                ` : ''}
               </div>
               <span class="tag tag-available">空闲</span>
             </div>
@@ -319,6 +371,11 @@ function renderSelectedRoom(room) {
       <div style="flex:1">
         <div style="font-weight:600;font-size:13px">${utils.escapeHtml(room.name)}</div>
         <div style="font-size:12px;color:var(--color-text-secondary)">${utils.escapeHtml(room.building)} · ${utils.escapeHtml(room.floor)} · ${room.capacity}人</div>
+        ${room.facilities && room.facilities.length > 0 ? `
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px">
+          设备: ${room.facilities.map(f => utils.facilityLabel(f)).join(' · ')}
+        </div>
+        ` : ''}
       </div>
       <span class="tag tag-primary">已选择</span>
     </div>

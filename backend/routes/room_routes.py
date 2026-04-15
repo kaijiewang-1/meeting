@@ -12,6 +12,10 @@ rooms_bp = Blueprint('rooms', __name__, url_prefix='/api')
 @require_auth
 def get_available():
     """查询可用会议室"""
+    facilities = request.args.getlist('facilities')
+    user_college = g.current_user.get('college')
+    is_admin = g.current_user.get('role') == 'ADMIN'
+    
     filters = {
         'date': request.args.get('date'),
         'start': request.args.get('startTime'),
@@ -19,9 +23,15 @@ def get_available():
         'capacity': request.args.get('capacity'),
         'building': request.args.get('building'),
         'floor': request.args.get('floor'),
-        'facilities': request.args.getlist('facilities') or None,
+        'facilities': facilities if facilities else None,
     }
+<<<<<<< HEAD
     rooms = room_service.get_available_rooms(filters, for_user=g.current_user)
+=======
+    filters = {k: v for k, v in filters.items() if v is not None}
+    
+    rooms = room_service.get_available_rooms(filters, user_college, is_admin)
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 
@@ -29,7 +39,13 @@ def get_available():
 @require_auth
 def get_rooms():
     """获取所有会议室"""
+<<<<<<< HEAD
     facilities = request.args.getlist('facilities')
+=======
+    user_college = g.current_user.get('college')
+    is_admin = g.current_user.get('role') == 'ADMIN'
+    
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     filters = {
         'building': request.args.get('building'),
         'floor': request.args.get('floor'),
@@ -40,10 +56,16 @@ def get_rooms():
         'end': request.args.get('endTime'),
         'facilities': facilities if facilities else None,
     }
+<<<<<<< HEAD
     rooms = room_service.get_all_rooms(
         {k: v for k, v in filters.items() if v is not None and v != ''},
         for_user=g.current_user,
     )
+=======
+    filters = {k: v for k, v in filters.items() if v is not None}
+    
+    rooms = room_service.get_all_rooms(filters, user_college, is_admin)
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
     return jsonify({'code': 0, 'message': 'success', 'data': rooms, 'total': len(rooms)}), 200
 
 

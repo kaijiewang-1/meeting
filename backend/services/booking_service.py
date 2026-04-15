@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from database import get_db
 from config import Config
 from services import room_service
-
+from services.notification_service import notification_service
 
 # ─── 冲突检测 ────────────────────────────────────────────────
 
@@ -313,6 +313,18 @@ def cancel_booking(booking_id, user_id):
     # 写操作日志
     _log_operation(user_id, 'CANCEL_BOOKING', 'booking', booking_id,
                   f'取消预定 {booking["booking_no"]}')
+
+    # ========== 发送取消通知 ==========
+    booking_data = {
+        'room_name': booking.get('room_name', '会议室'),
+        'start_time': booking.get('start_time'),
+        'end_time': booking.get('end_time'),
+        'subject': booking.get('subject')
+    }
+    notification_service.send_booking_canceled(
+        booking_id, booking['organizer_id'], booking_data
+    )
+    # =================================
 
     return get_booking_by_id(booking_id), 0, '已取消预定'
 

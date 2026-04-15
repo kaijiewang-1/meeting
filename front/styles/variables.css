@@ -1,11 +1,11 @@
 :root {
-  /* Brand — 淡紫主题 */
-  --color-primary: #8b6bc9;
-  --color-primary-hover: #7a5ab8;
-  --color-primary-light: #f3edfc;
-  --color-primary-dark: #5c3d8a;
+  /* Brand - 新主题色 RGB(106, 6, 7) */
+  --color-primary: #6a0607;
+  --color-primary-hover: #4a0405;
+  --color-primary-light: #f0e6e6;
+  --color-primary-dark: #3a0304;
   --color-primary-muted: #c4b5e8;
-  --shadow-focus-primary: 0 0 0 3px rgba(139, 107, 201, 0.22);
+  --shadow-focus-primary: 0 0 0 3px rgba(106, 6, 7, 0.22);
 
   /* Status */
   --color-available: #10b981;
@@ -23,7 +23,7 @@
   --color-success: #10b981;
   --color-success-bg: #d1fae5;
 
-  /* Neutrals（背景带极淡紫倾向） */
+  /* Neutrals */
   --color-bg: #f6f4fb;
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;

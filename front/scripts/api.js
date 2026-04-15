@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // 会议室预定系统 - API 客户端
 // - Flask 单端口（:5000）或公网 HTTPS 同源：使用当前 origin + /api
 // - 本地 python -m http.server 8080 / Live Server 等：请求发到 127.0.0.1:5000/api（避免 /api 被静态服务器当成文件路径 404）
@@ -123,24 +124,35 @@ function mapStats(s) {
 }
 
 const api = {
-  // ── 认证 ──────────────────────────────────────────────
-
+  // Auth
   async login(username, password) {
+<<<<<<< HEAD
     const res = await fetch(`${API_BASE}/auth/login`, {
+=======
+    const response = await fetch(`${API_BASE}/auth/login`, {
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
+<<<<<<< HEAD
     const json = await res.json();
     if (json.code !== 0) {
       throw { code: json.code, message: json.message || '登录失败' };
     }
     return json;
+=======
+    const result = await response.json();
+    if (result.code === 0) {
+      return result;
+    }
+    throw result;
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
   },
 
-  // ── 会议室 ──────────────────────────────────────────────
-
+  // Rooms
   async getRooms(params = {}) {
+<<<<<<< HEAD
     const qs = new URLSearchParams();
     if (params.building) qs.set('building', params.building);
     if (params.floor) qs.set('floor', params.floor);
@@ -165,62 +177,109 @@ const api = {
     if (params.capacity) qs.set('capacity', params.capacity);
     if (params.building) qs.set('building', params.building);
     if (params.floor) qs.set('floor', params.floor);
+=======
+    const queryParams = new URLSearchParams();
+    if (params.building) queryParams.append('building', params.building);
+    if (params.floor) queryParams.append('floor', params.floor);
+    if (params.capacity) queryParams.append('capacity', params.capacity);
+    if (params.status) queryParams.append('status', params.status);
     if (params.facilities && params.facilities.length) {
-      params.facilities.forEach(f => qs.append('facilities', f));
+      params.facilities.forEach(f => queryParams.append('facilities', f));
     }
-    const path = `/rooms/available${qs.toString() ? '?' + qs.toString() : ''}`;
-    const json = await request('GET', path);
-    return { ...json, data: (json.data || []).map(mapRoom) };
+    
+    const url = `${API_BASE}/rooms?${queryParams.toString()}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
+  },
+
+  async getAvailableRooms(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.startTime) queryParams.append('startTime', params.startTime);
+    if (params.endTime) queryParams.append('endTime', params.endTime);
+    if (params.capacity) queryParams.append('capacity', params.capacity);
+    if (params.building) queryParams.append('building', params.building);
+    if (params.floor) queryParams.append('floor', params.floor);
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
+    if (params.facilities && params.facilities.length) {
+      params.facilities.forEach(f => queryParams.append('facilities', f));
+    }
+    
+    const url = `${API_BASE}/rooms/available?${queryParams.toString()}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
   },
 
   async getRoom(id) {
-    const json = await request('GET', `/rooms/${id}`);
-    return { ...json, data: mapRoom(json.data) };
+    const response = await fetch(`${API_BASE}/rooms/${id}`, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
   },
 
   async getRoomSchedule(id, date) {
-    const json = await request('GET', `/rooms/${id}/schedule?date=${date}`);
-    return { ...json, data: (json.data || []).map(mapBooking) };
+    const response = await fetch(`${API_BASE}/rooms/${id}/schedule?date=${date}`, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
   },
 
-  // ── 预定 ──────────────────────────────────────────────
-
+  // Bookings
   async getMyBookings(params = {}) {
-    const qs = new URLSearchParams();
-    if (params.status) qs.set('status', params.status);
-    const path = `/bookings/my${qs.toString() ? '?' + qs.toString() : ''}`;
-    const json = await request('GET', path);
-    return { ...json, data: (json.data || []).map(mapBooking) };
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    
+    const url = `${API_BASE}/bookings/my?${queryParams.toString()}`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
   },
 
   async createBooking(data) {
-    const body = {
-      subject: data.subject,
-      roomId: data.roomId,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      attendeeCount: data.attendeeCount || 1,
-      remark: data.remark || '',
-    };
-    const json = await request('POST', '/bookings', body);
-    return { ...json, data: mapBooking(json.data) };
+    const response = await fetch(`${API_BASE}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
   },
 
   async cancelBooking(id) {
-    const json = await request('POST', `/bookings/${id}/cancel`);
-    return { ...json, data: mapBooking(json.data) };
+    const response = await fetch(`${API_BASE}/bookings/${id}/cancel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+    });
+    return response.json();
   },
 
   async checkIn(id) {
-    const json = await request('POST', `/bookings/${id}/check-in`);
-    return { ...json, data: mapBooking(json.data) };
+    const response = await fetch(`${API_BASE}/bookings/${id}/check-in`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+    });
+    return response.json();
   },
 
-  // ── 统计 ──────────────────────────────────────────────
-
+  // Stats
   async getStats() {
-    const json = await request('GET', '/admin/stats');
-    return { ...json, data: mapStats(json.data) };
+    const response = await fetch(`${API_BASE}/admin/stats`, {
+      headers: { 'Authorization': `Bearer ${auth.getToken()}` }
+    });
+    return response.json();
   },
 
   // ── 管理 ──────────────────────────────────────────────
@@ -260,6 +319,7 @@ const api = {
   },
 
   async updateRoom(id, data) {
+<<<<<<< HEAD
     const body = {};
     if (data.name !== undefined) body.name = data.name;
     if (data.building !== undefined) body.building = data.building;
@@ -287,6 +347,29 @@ const api = {
     if (data.visible_colleges !== undefined) body.visible_colleges = data.visible_colleges;
     const json = await request('PUT', `/admin/rooms/${id}`, body);
     return { ...json, data: mapRoom(json.data) };
+=======
+    const response = await fetch(`${API_BASE}/admin/rooms/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async createRoom(data) {
+    const response = await fetch(`${API_BASE}/admin/rooms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.getToken()}`
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
   },
 
   async deleteRoom(id) {
@@ -316,3 +399,5 @@ const api = {
 };
 
 window.api = api;
+window.MOCK_BOOKINGS = MOCK_BOOKINGS;
+window.MOCK_ROOMS = MOCK_ROOMS;

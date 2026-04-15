@@ -16,10 +16,10 @@ export default async function init() {
 
   App.setPageView(`
     <div class="page-header">
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
         <div>
           <h1 class="page-title">会议室管理</h1>
-          <p class="page-subtitle">新增、编辑、停用会议室基础信息</p>
+          <p class="page-subtitle">新增、编辑、停用会议室基础信息，设置可见学院和审批规则</p>
         </div>
         <button class="btn btn-primary" onclick="AdminRoomsPage.showAddModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -43,9 +43,9 @@ export default async function init() {
       try {
         await api.updateRoom(id, { status });
         Toast.success('状态已更新');
+        await loadAdminRooms();
       } catch (e) {
         Toast.error(e.message || '更新失败');
-        loadAdminRooms();
       }
     },
     async showAddModal() {
@@ -97,6 +97,7 @@ export default async function init() {
     },
     async save(id) {
       const name = document.getElementById('m_name').value.trim();
+      const building = document.getElementById('m_building').value.trim();
       const building = document.getElementById('m_building').value.trim();
       const floor = document.getElementById('m_floor').value.trim();
       const capacity = parseInt(document.getElementById('m_capacity').value);
@@ -157,6 +158,7 @@ export default async function init() {
       }
     }
   };
+  
   await loadAdminRooms();
 }
 
@@ -179,6 +181,7 @@ async function loadAdminRooms() {
               <th>位置</th>
               <th>容量</th>
               <th>设备</th>
+<<<<<<< HEAD
               <th>开放时间</th>
               <th>审批</th>
               <th>可见性</th>
@@ -194,25 +197,40 @@ async function loadAdminRooms() {
                   <div style="display:flex;align-items:center;gap:8px">
                     <div style="width:32px;height:32px;border-radius:8px;background:var(--color-primary-light);
                                 display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
-                      ${r.image}
+                      ${r.image || '🏢'}
                     </div>
                     <div>
                       <div style="font-weight:600">${utils.escapeHtml(r.name)}</div>
                       <div style="font-size:11px;color:var(--color-text-tertiary)">${utils.escapeHtml(r.description || '').substring(0, 30)}</div>
                     </div>
                   </div>
-                </td>
+                 </td>
                 <td>
                   <div style="font-size:13px">${utils.escapeHtml(r.building)}</div>
                   <div style="font-size:12px;color:var(--color-text-tertiary)">${utils.escapeHtml(r.floor)}</div>
-                </td>
+                 </td>
                 <td><strong>${r.capacity}人</strong></td>
                 <td>
                   <div style="display:flex;flex-wrap:wrap;gap:4px">
-                    ${r.facilities.slice(0, 2).map(f => `<span class="facility-tag" style="font-size:10px;padding:1px 6px">${utils.facilityLabel(f)}</span>`).join('')}
-                    ${r.facilities.length > 2 ? `<span style="font-size:10px;color:var(--color-text-tertiary)">+${r.facilities.length - 2}</span>` : ''}
-                    ${!r.facilities.length ? '<span style="font-size:12px;color:var(--color-text-tertiary)">-</span>' : ''}
+                    ${r.facilities && r.facilities.slice(0, 2).map(f => `<span class="facility-tag" style="font-size:10px;padding:1px 6px">${utils.facilityLabel(f)}</span>`).join('')}
+                    ${r.facilities && r.facilities.length > 2 ? `<span style="font-size:10px;color:var(--color-text-tertiary)">+${r.facilities.length - 2}</span>` : ''}
+                    ${!r.facilities || !r.facilities.length ? '<span style="font-size:12px;color:var(--color-text-tertiary)">-</span>' : ''}
                   </div>
+<<<<<<< HEAD
+                </td>
+                <td style="font-size:12px">
+                  <div>工作日: ${utils.escapeHtml(r.weekday_open_hours || r.open_hours || '08:00-18:00')}</div>
+                  <div class="text-xs text-tertiary">周末: ${r.weekend_open_hours ? utils.escapeHtml(r.weekend_open_hours) : '不开放'}</div>
+                </td>
+                <td>
+                  <span class="tag ${r.requires_approval ? 'tag-warning' : 'tag-success'}">
+                    ${r.requires_approval ? '需审批' : '免审批'}
+                  </span>
+                </td>
+                <td>
+                  <span style="font-size:12px;color:var(--color-text-secondary)">
+                    ${r.visible_colleges && r.visible_colleges.length ? `${r.visible_colleges.length}个学院` : '全部学院'}
+                  </span>
                 </td>
                 <td style="font-size:12px;color:var(--color-text-secondary)">
                   <div>工作日: ${utils.escapeHtml((r.weekday_open_hours || r.weekdayOpenHours || r.openHours || '-'))}</div>
@@ -238,14 +256,14 @@ async function loadAdminRooms() {
                     <option value="BUSY" ${r.status === 'BUSY' ? 'selected' : ''}>使用中</option>
                     <option value="MAINTENANCE" ${r.status === 'MAINTENANCE' ? 'selected' : ''}>维护中</option>
                   </select>
-                </td>
+                 </td>
                 <td>
-                  <div style="display:flex;gap:6px">
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-secondary btn-sm" onclick="AdminRoomsPage.showEditModal(${r.id})">编辑</button>
                     <button class="btn btn-danger btn-sm" onclick="AdminRoomsPage.deleteRoom(${r.id}, '${utils.escapeHtml(r.name)}')">删除</button>
                   </div>
-                </td>
-              </tr>
+                 </td>
+               </tr>
             `).join('')}
           </tbody>
         </table>
@@ -295,7 +313,7 @@ async function showRoomModal(title, room = null) {
   modal.className = 'modal-overlay';
   modal.id = 'roomModal';
   modal.innerHTML = `
-    <div class="modal">
+    <div class="modal" style="max-width:700px">
       <div class="modal-header">
         <span class="modal-title">${utils.escapeHtml(title)}</span>
         <button class="modal-close" onclick="document.getElementById('roomModal').remove()">
@@ -305,12 +323,15 @@ async function showRoomModal(title, room = null) {
         </button>
       </div>
       <div class="modal-body">
+        <!-- 基础信息 -->
         <div class="form-group">
           <label class="form-label">名称 <span style="color:var(--color-danger)">*</span></label>
           <input type="text" id="m_name" class="form-input" placeholder="如：星辰厅" value="${utils.escapeHtml(room?.name || '')}" required>
         </div>
+        
         <div class="form-row">
           <div class="form-group">
+<<<<<<< HEAD
             <label class="form-label">楼宇 <span style="color:var(--color-danger)">*</span></label>
             <input type="text" id="m_building" class="form-input" placeholder="如：总部大楼" value="${utils.escapeHtml(room?.building || '')}" required>
           </div>
@@ -319,6 +340,7 @@ async function showRoomModal(title, room = null) {
             <input type="text" id="m_floor" class="form-input" placeholder="如：10F" value="${utils.escapeHtml(room?.floor || '')}" required>
           </div>
         </div>
+        
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">容量（人） <span style="color:var(--color-danger)">*</span></label>
@@ -331,10 +353,51 @@ async function showRoomModal(title, room = null) {
             <input type="text" id="m_weekday_hours" class="form-input" placeholder="如：08:00-18:00" value="${utils.escapeHtml(room?.weekdayOpenHours || room?.weekday_open_hours || room?.openHours || '08:00-18:00')}">
           </div>
           <div class="form-group">
+            <label class="form-label">状态</label>
+            <select id="m_status" class="form-select">
+              <option value="AVAILABLE" ${room?.status === 'AVAILABLE' ? 'selected' : ''}>空闲</option>
+              <option value="BUSY" ${room?.status === 'BUSY' ? 'selected' : ''}>使用中</option>
+              <option value="MAINTENANCE" ${room?.status === 'MAINTENANCE' ? 'selected' : ''}>维护中</option>
+            </select>
+          </div>
+        </div>
+        
+<<<<<<< HEAD
+        <!-- 开放时间（工作日/周末区分） -->
+        <div class="form-group">
+          <label class="form-label">开放时间</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">工作日（周一至周五）</label>
+              <input type="text" id="m_weekday_hours" class="form-input" placeholder="如：08:00-18:00" value="${weekdayHours}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">周末（周六至周日）</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input type="text" id="m_weekend_hours" class="form-input" placeholder="如：09:00-17:00" value="${isWeekendClosed ? '' : weekendHours}" style="flex:1" ${isWeekendClosed ? 'disabled' : ''}>
+                <label class="checkbox-group" style="white-space:nowrap">
+                  <input type="checkbox" id="m_weekend_closed" ${isWeekendClosed ? 'checked' : ''}>
+                  <span>周末不开放</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-hint">格式：开始时间-结束时间，如 08:00-18:00</div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">图标</label>
+          <input type="text" id="m_image" class="form-input" placeholder="如：🌟" value="${room?.image || '🏢'}" maxlength="2">
+=======
+        <div class="form-row">
+          <div class="form-group">
             <label class="form-label">周末开放时间</label>
             <input type="text" id="m_weekend_hours" class="form-input" placeholder="如：09:00-17:00" value="${utils.escapeHtml(room?.weekendOpenHours || room?.weekend_open_hours || '09:00-17:00')}">
           </div>
+          <div class="form-hint">选择可见的学院，留空或勾选"全部学院"表示所有学院可见</div>
         </div>
+        
+        <!-- 设备设施 -->
         <div class="form-group">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
             <label class="form-label" style="margin:0">设备设施</label>
@@ -347,6 +410,8 @@ async function showRoomModal(title, room = null) {
             ${customChecks || '<span id="m_facilities_extra_hint" style="font-size:12px;color:var(--color-text-tertiary)">自定义设备将显示在此处</span>'}
           </div>
         </div>
+        
+        <!-- 描述 -->
         <div class="form-group">
           <label class="form-label">描述</label>
           <textarea id="m_desc" class="form-input" rows="3" placeholder="会议室简要描述">${utils.escapeHtml(room?.description || '')}</textarea>
@@ -385,6 +450,72 @@ async function showRoomModal(title, room = null) {
     </div>
   `;
   document.body.appendChild(modal);
+  
+<<<<<<< HEAD
+  // 审批设置复选框逻辑
+  const requiresApprovalCheckbox = document.getElementById('m_requires_approval');
+  const approverContainer = document.getElementById('approverSelectContainer');
+  if (requiresApprovalCheckbox && approverContainer) {
+    requiresApprovalCheckbox.addEventListener('change', (e) => {
+      approverContainer.style.display = e.target.checked ? 'block' : 'none';
+    });
+  }
+  
+  // 周末不开放复选框逻辑
+  const weekendClosedCheckbox = document.getElementById('m_weekend_closed');
+  const weekendHoursInput = document.getElementById('m_weekend_hours');
+  if (weekendClosedCheckbox && weekendHoursInput) {
+    weekendClosedCheckbox.addEventListener('change', (e) => {
+      weekendHoursInput.disabled = e.target.checked;
+      if (e.target.checked) {
+        weekendHoursInput.value = '';
+      }
+    });
+  }
+  
+=======
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
+  // "全部学院"复选框逻辑
+  const allCheckbox = document.getElementById('m_visible_all');
+  const collegeCheckboxes = document.querySelectorAll('.college-checkbox');
+  
+  if (allCheckbox) {
+    const updateCollegeState = () => {
+      if (allCheckbox.checked) {
+        collegeCheckboxes.forEach(cb => {
+          cb.checked = false;
+          cb.disabled = true;
+        });
+      } else {
+        collegeCheckboxes.forEach(cb => {
+          cb.disabled = false;
+        });
+      }
+    };
+    
+    allCheckbox.addEventListener('change', updateCollegeState);
+    
+    collegeCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          allCheckbox.checked = false;
+        }
+<<<<<<< HEAD
+=======
+        // 检查是否所有学院都未选中
+>>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
+        const anyChecked = Array.from(collegeCheckboxes).some(c => c.checked);
+        if (!anyChecked && !allCheckbox.checked) {
+          allCheckbox.checked = true;
+          updateCollegeState();
+        }
+      });
+    });
+    
+    updateCollegeState();
+  }
+  
+  // 点击遮罩关闭
   modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
   window.AdminRoomsPage.bindRoomModal();
 }
