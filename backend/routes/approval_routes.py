@@ -2,7 +2,7 @@
 审批接口路由
 """
 from flask import Blueprint, request, jsonify, g
-from auth import require_auth, require_admin
+from auth import require_staff
 from database import get_db
 from datetime import datetime
 from services.notification_service import notification_service
@@ -11,8 +11,7 @@ approval_bp = Blueprint('approval', __name__, url_prefix='/api/approvals')
 
 
 @approval_bp.route('/pending', methods=['GET'])
-@require_auth
-@require_admin
+@require_staff
 def get_pending_approvals():
     """获取待审批列表（管理员）"""
     conn = get_db()
@@ -40,8 +39,7 @@ def get_pending_approvals():
 
 
 @approval_bp.route('/<int:booking_id>/approve', methods=['POST'])
-@require_auth
-@require_admin
+@require_staff
 def approve_booking(booking_id):
     """审批通过"""
     conn = get_db()
@@ -86,8 +84,7 @@ def approve_booking(booking_id):
 
 
 @approval_bp.route('/<int:booking_id>/reject', methods=['POST'])
-@require_auth
-@require_admin
+@require_staff
 def reject_booking(booking_id):
     """审批拒绝"""
     data = request.get_json() or {}
@@ -135,8 +132,7 @@ def reject_booking(booking_id):
 
 
 @approval_bp.route('/statistics', methods=['GET'])
-@require_auth
-@require_admin
+@require_staff
 def get_approval_statistics():
     """获取审批统计（管理员）"""
     conn = get_db()

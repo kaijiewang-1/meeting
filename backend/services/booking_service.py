@@ -390,8 +390,10 @@ def approve_booking(booking_id, admin_id):
     if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
         return None, 40001, '该预定不在待审批状态'
 
+    actor = _get_user(admin_id)
+    is_full_admin = actor and str(actor.get('role', '')).upper() == 'ADMIN'
     room = _get_room(booking['room_id'])
-    if room:
+    if room and not is_full_admin:
         designated = room.get('approver_user_id')
         if designated is not None and str(designated).strip() != '' and int(designated) != int(admin_id):
             return None, 40301, '您不是该会议室指定的审批人'
@@ -424,8 +426,10 @@ def reject_booking(booking_id, admin_id, reason=''):
     if booking['status'] != Config.BOOKING_STATUS_PENDING_APPROVAL:
         return None, 40001, '该预定不在待审批状态'
 
+    actor = _get_user(admin_id)
+    is_full_admin = actor and str(actor.get('role', '')).upper() == 'ADMIN'
     room = _get_room(booking['room_id'])
-    if room:
+    if room and not is_full_admin:
         designated = room.get('approver_user_id')
         if designated is not None and str(designated).strip() != '' and int(designated) != int(admin_id):
             return None, 40301, '您不是该会议室指定的审批人'

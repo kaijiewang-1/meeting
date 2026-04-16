@@ -2,7 +2,7 @@
 管理端接口路由
 """
 from flask import Blueprint, request, jsonify, g
-from auth import require_admin
+from auth import require_admin, require_staff
 from database import get_db
 from services import room_service, booking_service, stats_service
 
@@ -14,11 +14,11 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @admin_bp.route('/approvers', methods=['GET'])
 @require_admin
 def admin_list_approvers():
-    """会议室「需审批」时可指定的审批人列表（角色为 ADMIN 且账号有效）"""
+    """会议室「需审批」时可指定的审批人列表（管理员或审批人角色且账号有效）"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, username, name FROM users WHERE role = 'ADMIN' AND status = 'ACTIVE' ORDER BY name, id"
+        "SELECT id, username, name FROM users WHERE role IN ('ADMIN', 'APPROVER') AND status = 'ACTIVE' ORDER BY name, id"
     )
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
@@ -91,9 +91,9 @@ def get_colleges():
 # ─── 预定管理 ────────────────────────────────────────────
 
 @admin_bp.route('/bookings', methods=['GET'])
-@require_admin
+@require_staff
 def admin_get_bookings():
-    """获取所有预定（管理员）"""
+    """获取所有预定（管理员或审批人）"""
     filters = {
         'status': request.args.get('status'),
         'date_from': request.args.get('date_from'),
@@ -106,9 +106,9 @@ def admin_get_bookings():
 
 
 @admin_bp.route('/bookings/<int:booking_id>/approve', methods=['POST'])
-@require_admin
+@require_staff
 def admin_approve_booking(booking_id):
-    """管理员通过待审批预定"""
+    """通过待审批预定（管理员或审批人；非管理员需为会议室指定审批人）"""
     admin_id = g.current_user['id']
     booking, err_code, err_msg = booking_service.approve_booking(booking_id, admin_id)
     if not booking:
@@ -117,9 +117,9 @@ def admin_approve_booking(booking_id):
 
 
 @admin_bp.route('/bookings/<int:booking_id>/reject', methods=['POST'])
-@require_admin
+@require_staff
 def admin_reject_booking(booking_id):
-    """管理员拒绝待审批预定"""
+    """拒绝待审批预定（管理员或审批人；非管理员需为会议室指定审批人）"""
     admin_id = g.current_user['id']
     data = request.get_json() or {}
     reason = (data.get('reason') or data.get('remark') or '').strip()
@@ -132,7 +132,7 @@ def admin_reject_booking(booking_id):
 # ─── 统计数据 ────────────────────────────────────────────
 
 @admin_bp.route('/stats', methods=['GET'])
-@require_admin
+@require_staff
 def get_stats():
     """获取统计数据"""
     basic = stats_service.get_stats()

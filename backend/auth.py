@@ -69,13 +69,32 @@ def require_auth(f):
 
 
 def require_admin(f):
-    """管理员权限装饰器"""
+    """管理员权限装饰器（仅 ADMIN）"""
     @wraps(f)
     def decorated(*args, **kwargs):
         user = get_current_user()
         if not user:
             return jsonify({'code': 40101, 'message': '未登录或登录已过期', 'data': None}), 401
         if user['role'] != 'ADMIN':
+            return jsonify({'code': 40301, 'message': '无权限访问', 'data': None}), 403
+        g.current_user = user
+        return f(*args, **kwargs)
+    return decorated
+
+
+def role_is_staff(role):
+    """管理员或审批人可访问后台管理类接口（不含会议室 CRUD）"""
+    return str(role or '').upper() in ('ADMIN', 'APPROVER')
+
+
+def require_staff(f):
+    """管理员或审批人"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return jsonify({'code': 40101, 'message': '未登录或登录已过期', 'data': None}), 401
+        if not role_is_staff(user.get('role')):
             return jsonify({'code': 40301, 'message': '无权限访问', 'data': None}), 403
         g.current_user = user
         return f(*args, **kwargs)
