@@ -25,23 +25,9 @@
   <script src="scripts/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 检查设备类型，如果是电脑端则提示
-      if (window.innerWidth > 768) {
-        alert('请在手机上使用会议室预定系统');
-        document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f0f2f5;font-family:system-ui;text-align:center"><div><h2>请在手机上使用</h2><p>会议室预定系统仅支持手机端访问</p></div></div>';
-        return;
-      }
-      if (!window.location.hash) {
-        if (auth.isLoggedIn()) {
-          if (auth.isAdmin()) {
-            // 管理员登入后直接进入管理后端
-            window.location.href = '/admin#/admin/rooms';
-          } else {
-            window.location.hash = '#/home';
-          }
-        } else {
-          window.location.hash = '#/login';
-        }
+      const h = window.location.hash;
+      if (!h || h === '#') {
+        window.location.hash = '#/login';
       }
       App.init();
     });

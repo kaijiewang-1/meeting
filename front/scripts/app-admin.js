@@ -26,27 +26,55 @@ const App = {
     const hash = window.location.hash;
     if (hash === '#/login' || hash === '' || !hash) return;
 
-    const role = auth.getRole();
     const user = auth.getUser() || { name: '管理员', username: 'admin' };
-    const isAdmin = role === 'admin';
+    const isAdminOnly = auth.isAdmin();
+    const isStaff = auth.isStaff();
+    const roleLabel = isAdminOnly ? '管理员' : '审批员';
 
-    // 非管理员不能访问管理端
-    if (!isAdmin) {
-      alert('无权限访问管理端');
-      router.navigate('/login');
+    if (!isStaff) {
+      window.location.href = '/#/login';
       return;
     }
 
-    // 管理端菜单（只有管理功能，没有预约功能）
-    const adminMenuHtml = `
-      <div class="sidebar-section-label">管理端</div>
+    const roomsNav = isAdminOnly ? `
       <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
         会议室管理
+      </a>` : '';
+    const usersNav = isAdminOnly ? `
+      <a href="#/admin/users" class="nav-item" data-page="admin-users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        审批员管理
+      </a>` : '';
+    const statsNav = isAdminOnly ? `
+      <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        数据统计
+      </a>` : '';
+
+    const adminMenuHtml = `
+      <div class="sidebar-section-label">预约端</div>
+      <a href="/#/home" class="nav-item" data-page="user-entry">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        进入预约端
       </a>
+      <div class="sidebar-section-label">管理端</div>
+      ${roomsNav}
+      ${usersNav}
       <a href="#/admin/bookings" class="nav-item" data-page="admin-bookings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -54,13 +82,7 @@ const App = {
         </svg>
         预定记录
       </a>
-      <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-        </svg>
-        数据统计
-      </a>
+      ${statsNav}
       <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
           <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
@@ -72,7 +94,7 @@ const App = {
     `;
 
     document.body.innerHTML = `
-      <div class="app-layout">
+      <div class="app-layout app-layout--admin">
         <!-- Sidebar -->
         <aside class="app-sidebar" id="sidebar">
           <div class="sidebar-logo">
@@ -97,7 +119,7 @@ const App = {
               <div class="sidebar-avatar">${(user.name || user.username || 'A').charAt(0).toUpperCase()}</div>
               <div class="sidebar-user-info">
                 <div class="sidebar-user-name">${utils.escapeHtml(user.name || user.username)}</div>
-                <div class="sidebar-user-role">管理员</div>
+                <div class="sidebar-user-role">${roleLabel}</div>
               </div>
               <button class="sidebar-user-btn" onclick="App.logout()" title="退出登录">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -115,7 +137,7 @@ const App = {
           <header class="app-header">
             <div class="header-left">
               <div class="header-breadcrumb" id="breadcrumb">
-                <a href="#/admin/stats">首页</a>
+                <a href="${isAdminOnly ? '#/admin/rooms' : '#/admin/bookings'}">首页</a>
               </div>
             </div>
             <div class="header-right">
@@ -284,17 +306,25 @@ const App = {
         return false;
       }
       if (auth.isLoggedIn() && path === '/login') {
-        router.navigate('/admin/stats');
+        if (auth.isAdmin()) {
+          router.navigate('/admin/rooms');
+        } else if (auth.isApprover()) {
+          router.navigate('/admin/bookings');
+        } else {
+          window.location.href = '/#/home';
+        }
         return false;
       }
 
-      const isAdmin = auth.isAdmin();
+      const isStaff = auth.isStaff();
       const isAdminPath = path.startsWith('/admin');
 
-      // 非管理员不能访问管理端
-      if (isAdminPath && !isAdmin) {
-        alert('无权限访问');
-        router.navigate('/login');
+      if (isAdminPath && !isStaff) {
+        window.location.href = '/#/home';
+        return false;
+      }
+      if (auth.isApprover() && (path.startsWith('/admin/rooms') || path.startsWith('/admin/users') || path.startsWith('/admin/stats'))) {
+        router.navigate('/admin/bookings');
         return false;
       }
 
@@ -316,6 +346,10 @@ const App = {
 
     router.add('/admin/rooms', async () => {
       await runPageModule(await import('./pages/admin-rooms.js'));
+    });
+
+    router.add('/admin/users', async () => {
+      await runPageModule(await import('./pages/admin-approvers.js'));
     });
 
     router.add('/admin/bookings', async () => {

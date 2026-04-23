@@ -4,7 +4,7 @@ const PRESET_FACILITIES = ['projector', 'whiteboard', 'video_conf', 'tv', 'audio
 export default async function init() {
   if (!auth.isAdmin()) {
     Toast.error('无权限访问');
-    router.navigate('/home');
+    router.navigate('/login');
     return;
   }
 
@@ -185,7 +185,7 @@ async function loadAdminRooms() {
 
   try {
     const res = await api.getAdminRooms();
-    const rooms = res.data;
+    const rooms = Array.isArray(res.data) ? res.data : [];
 
     content.innerHTML = `
       <div class="table-wrapper">
@@ -260,7 +260,7 @@ async function loadAdminRooms() {
                 <td>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-secondary btn-sm" onclick="AdminRoomsPage.showEditModal(${r.id})">编辑</button>
-                    <button class="btn btn-danger btn-sm" onclick="AdminRoomsPage.deleteRoom(${r.id}, '${utils.escapeHtml(r.name)}')">删除</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick='AdminRoomsPage.deleteRoom(${r.id}, ${JSON.stringify(r.name || '')})'>删除</button>
                   </div>
                  </td>
                </tr>

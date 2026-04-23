@@ -2,7 +2,7 @@
 export default async function init() {
   if (!auth.isAdmin()) {
     Toast.error('无权限访问');
-    router.navigate('/home');
+    router.navigate('/admin/bookings');
     return;
   }
 

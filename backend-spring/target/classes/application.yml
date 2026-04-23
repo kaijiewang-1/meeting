@@ -1,0 +1,13 @@
+server:
+  port: 5000
+
+spring:
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:../backend/meeting.db
+  jackson:
+    default-property-inclusion: non_null
+
+meeting:
+  jwt-secret: jwt-meeting-secret-2026
+  jwt-expiry-hours: 12

@@ -1,15 +1,16 @@
 // Admin - Booking records
 export default async function init() {
-  if (!auth.isAdmin()) {
+  if (!auth.isStaff()) {
     Toast.error('无权限访问');
-    router.navigate('/home');
+    router.navigate('/login');
     return;
   }
 
+  const adminRoot = auth.isAdmin() ? '#/admin/rooms' : '#/admin/bookings';
   App.renderLayout();
   App.updateBreadcrumb([
-    { label: '管理端', href: '#/admin/rooms' },
-    { label: '预定与审批' },
+    { label: '管理端', href: adminRoot },
+    { label: '预定记录' },
   ]);
 
   App.setPageView(`

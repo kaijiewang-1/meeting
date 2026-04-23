@@ -46,6 +46,41 @@
   margin: 0 auto;
 }
 
+/* 底部 Tab：默认隐藏（仅小屏用户端显示，样式在下方媒体查询内） */
+.app-bottom-nav {
+  display: none;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px 4px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.bottom-nav-item svg {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.bottom-nav-item.active {
+  color: var(--color-primary);
+}
+
+.bottom-nav-item.active svg {
+  opacity: 1;
+}
+
 /* Sidebar */
 .sidebar-logo {
   height: var(--header-height);
@@ -301,6 +336,198 @@
   color: var(--color-text-secondary);
 }
 
+.page-header-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-header-actions {
+  flex-shrink: 0;
+}
+
+.page-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.booking-form-shell {
+  max-width: 640px;
+}
+
+.booking-room-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.selected-room-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary);
+  margin-bottom: 12px;
+}
+
+.selected-room-banner-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.selected-room-banner-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-room-banner-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.selected-room-banner-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.room-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.room-option-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.room-option-card input[type="radio"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.room-option-card-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.room-option-card-title {
+  font-weight: 600;
+}
+
+.room-option-card-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.booking-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.calendar-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.calendar-room-select {
+  width: 160px;
+  min-width: 0;
+  flex: 1;
+}
+
+.calendar-page-card .card-body.calendar-scroll {
+  padding: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.calendar-grid-root {
+  min-width: 800px;
+}
+
+.home-list-item,
+.home-room-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.home-list-accent {
+  width: 4px;
+  height: 40px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.home-list-body,
+.home-room-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-list-title,
+.home-room-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-list-meta,
+.home-room-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.home-room-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.bookings-my-subject-line {
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
 /* 首页新建预约区 */
 .home-booking-hero {
   position: relative;
@@ -540,10 +767,15 @@ a.btn-hero-primary:hover {
 /* 我的预定 Tab */
 .tabs-wrap--scroll {
   border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .tabs.tabs--bookings {
   margin: 0;
+  flex-wrap: nowrap;
+  min-width: min-content;
 }
 
 .bookings-actions-row {
@@ -899,6 +1131,7 @@ tbody tr:last-child td {
   margin-bottom: 12px;
   font-size: 13px;
   color: var(--color-text-secondary);
+  flex-wrap: wrap;
 }
 
 .room-card-meta-item {
@@ -1066,10 +1299,15 @@ tbody tr:last-child td {
 
 /* 移动端完整适配 */
 @media (max-width: 768px) {
+  .app-layout {
+    min-height: 100dvh;
+  }
+
   .app-sidebar {
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     width: 280px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   
   .app-sidebar.open {
@@ -1079,13 +1317,28 @@ tbody tr:last-child td {
   .app-main {
     margin-left: 0;
   }
+
+  /* 用户端：为底部导航与安全区预留空间，避免内容被遮挡 */
+  .app-layout:not(.app-layout--admin) .app-main {
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
   
-  #menuToggleBtn {
+  /* 与 JS 一致：小屏始终显示汉堡按钮（覆盖内联 display:none） */
+  #mobileMenuBtn {
     display: flex !important;
   }
   
   .app-header {
     padding: 0 12px;
+    padding-top: env(safe-area-inset-top, 0px);
+    height: auto;
+    min-height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+  }
+
+  .header-left,
+  .header-right {
+    gap: 6px;
   }
   
   .header-breadcrumb {
@@ -1132,6 +1385,11 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
     gap: 12px;
   }
+
+  .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
   
   .room-grid {
     grid-template-columns: 1fr;
@@ -1157,6 +1415,14 @@ tbody tr:last-child td {
   .filter-item .form-select {
     width: 100%;
   }
+
+  /* 覆盖页面内联 min-width，避免小屏横向撑出滚动条 */
+  .filter-bar .form-input,
+  .filter-bar .form-select {
+    min-width: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
   
   .table-wrapper {
     overflow-x: auto;
@@ -1165,6 +1431,90 @@ tbody tr:last-child td {
   
   table {
     min-width: 600px;
+  }
+
+  /* 我的预定：小屏卡片式列表，操作按钮全宽易点按 */
+  .bookings-list-wrap {
+    overflow-x: visible;
+  }
+
+  .bookings-my-table {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .bookings-my-table thead {
+    display: none;
+  }
+
+  .bookings-my-table tbody tr {
+    display: block;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+    padding: 2px 0 0;
+    background: var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .bookings-my-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .bookings-my-table td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px 14px !important;
+    border: none;
+    border-bottom: 1px solid var(--color-border-light);
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .bookings-my-table td:last-child {
+    border-bottom: none;
+    padding-top: 12px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .bookings-my-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+  }
+
+  .bookings-my-subject-line {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .bookings-my-table .bookings-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .bookings-my-table .bookings-actions-row .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  .bookings-my-header .page-header-actions {
+    width: 100%;
+  }
+
+  .bookings-my-header .page-header-actions .btn {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 44px;
   }
   
   .modal {
@@ -1188,6 +1538,18 @@ tbody tr:last-child td {
   
   .page-subtitle {
     font-size: 12px;
+  }
+
+  .page-header-actions,
+  .page-header-actions .btn,
+  .page-header-actions .form-select,
+  .home-workbench-header-actions,
+  .home-workbench-header-actions .btn {
+    width: 100%;
+  }
+
+  .page-summary-bar {
+    align-items: stretch;
   }
   
   .card-body {
@@ -1233,9 +1595,123 @@ tbody tr:last-child td {
   .room-card-actions .btn {
     width: 100%;
   }
+
+  .home-booking-hero-inner {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .home-booking-desc {
+    max-width: 100%;
+    font-size: 13px;
+  }
+
+  .home-booking-actions,
+  .home-booking-actions .btn-hero-secondary,
+  .home-booking-actions .btn-hero-primary {
+    width: 100%;
+  }
+
+  .home-booking-actions .btn-hero-primary,
+  .home-booking-actions .btn-hero-secondary {
+    min-height: 46px;
+  }
+
+  .home-list-item,
+  .home-room-item {
+    align-items: flex-start;
+  }
+
+  .home-list-item .tag,
+  .home-room-item .tag {
+    align-self: flex-start;
+  }
+
+  .booking-form-shell {
+    max-width: none;
+  }
+
+  .booking-room-search-row .btn {
+    width: 100%;
+  }
+
+  .selected-room-banner {
+    align-items: flex-start;
+    padding: 12px 10px;
+  }
+
+  .selected-room-banner-title,
+  .selected-room-banner-meta {
+    word-break: break-word;
+  }
+
+  .room-option-card {
+    padding: 12px 10px;
+  }
+
+  .booking-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .booking-form-actions .btn {
+    width: 100%;
+  }
+
+  .calendar-toolbar-actions {
+    align-items: stretch;
+  }
+
+  .calendar-room-select {
+    width: 100%;
+    flex: none;
+  }
+
+  .calendar-week-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .calendar-week-nav .btn {
+    min-height: 44px;
+  }
+
+  .calendar-nav-btn {
+    flex: 0 0 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  .calendar-this-week {
+    flex: 1;
+  }
+
+  .calendar-grid-root {
+    min-width: 640px;
+  }
+
+  .timeline-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .timeline-slot {
+    min-height: 44px;
+  }
   
   .app-bottom-nav {
     display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-bottom-nav);
+    align-items: stretch;
+    justify-content: space-around;
+    min-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.06);
   }
   
   .sidebar-backdrop {
@@ -1243,7 +1719,7 @@ tbody tr:last-child td {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 90;
+    z-index: var(--z-sidebar-backdrop);
   }
   
   .sidebar-backdrop.is-visible {

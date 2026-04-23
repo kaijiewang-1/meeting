@@ -9,12 +9,12 @@ from services import room_service, booking_service, stats_service
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 
-# ─── 审批人候选（管理员账号）────────────────────────────────
+# ─── 审批员候选 / 管理 ─────────────────────────────────
 
 @admin_bp.route('/approvers', methods=['GET'])
 @require_admin
 def admin_list_approvers():
-    """会议室「需审批」时可指定的审批人列表（管理员或审批人角色且账号有效）"""
+    """会议室「需审批」时可指定的审批员列表（管理员或审批员角色且账号有效）"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
@@ -23,6 +23,64 @@ def admin_list_approvers():
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({'code': 0, 'message': 'success', 'data': rows}), 200
+
+
+@admin_bp.route('/users', methods=['GET'])
+@require_admin
+def admin_list_users():
+    """管理员查看用户与审批员账号，用于管理审批员角色"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''
+        SELECT id, username, name, email, college_code, role, status, created_at
+        FROM users
+        WHERE status = 'ACTIVE'
+        ORDER BY
+          CASE role WHEN 'ADMIN' THEN 0 WHEN 'APPROVER' THEN 1 ELSE 2 END,
+          name, id
+        '''
+    )
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify({'code': 0, 'message': 'success', 'data': rows, 'total': len(rows)}), 200
+
+
+@admin_bp.route('/users/<int:user_id>/role', methods=['PUT'])
+@require_admin
+def admin_update_user_role(user_id):
+    """管理员提升/取消审批员角色；管理员账号本身不允许在此接口中修改"""
+    data = request.get_json() or {}
+    next_role = str(data.get('role') or '').upper().strip()
+    if next_role not in ('USER', 'APPROVER'):
+        return jsonify({'code': 40001, 'message': '角色仅支持 USER 或 APPROVER', 'data': None}), 200
+
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, username, name, email, college_code, role, status FROM users WHERE id = ?',
+        (user_id,)
+    )
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'code': 40401, 'message': '用户不存在', 'data': None}), 200
+    if str(row['role']).upper() == 'ADMIN':
+        conn.close()
+        return jsonify({'code': 40001, 'message': '管理员角色不能在此处修改', 'data': None}), 200
+
+    cursor.execute(
+        "UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?",
+        (next_role, user_id)
+    )
+    conn.commit()
+    cursor.execute(
+        'SELECT id, username, name, email, college_code, role, status FROM users WHERE id = ?',
+        (user_id,)
+    )
+    updated = dict(cursor.fetchone())
+    conn.close()
+    return jsonify({'code': 0, 'message': '角色更新成功', 'data': updated}), 200
 
 
 # ─── 会议室管理 ────────────────────────────────────────────
@@ -132,7 +190,7 @@ def admin_reject_booking(booking_id):
 # ─── 统计数据 ────────────────────────────────────────────
 
 @admin_bp.route('/stats', methods=['GET'])
-@require_staff
+@require_admin
 def get_stats():
     """获取统计数据"""
     basic = stats_service.get_stats()

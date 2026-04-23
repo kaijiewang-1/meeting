@@ -189,12 +189,13 @@ const api = {
   async getMyBookings(params = {}) {
     const queryParams = new URLSearchParams();
     if (params.status) queryParams.append('status', params.status);
-    
+
     const url = `${API_BASE}/bookings/my?${queryParams.toString()}`;
     const response = await fetch(url, {
       headers: { 'Authorization': `Bearer ${auth.getToken()}` }
     });
-    return response.json();
+    const json = await response.json();
+    return { ...json, data: (json.data || []).map(mapBooking) };
   },
 
   async createBooking(data) {
@@ -244,6 +245,16 @@ const api = {
   async getAdminApprovers() {
     const json = await request('GET', '/admin/approvers');
     return { ...json, data: json.data || [] };
+  },
+
+  async getAdminUsers() {
+    const json = await request('GET', '/admin/users');
+    return { ...json, data: json.data || [] };
+  },
+
+  async updateAdminUserRole(id, role) {
+    const json = await request('PUT', `/admin/users/${id}/role`, { role });
+    return { ...json, data: json.data || null };
   },
 
   async getAdminRooms() {

@@ -86,7 +86,7 @@ async function loadBookings(status) {
 
   try {
     const res = await api.getMyBookings({ status });
-    const bookings = res.data;
+    const bookings = Array.isArray(res.data) ? res.data : [];
 
     if (!bookings.length) {
       list.innerHTML = `
@@ -131,7 +131,7 @@ async function loadBookings(status) {
                 <tr>
                   <td data-label="预定编号"><code style="font-family:var(--font-mono);font-size:12px;background:var(--color-bg);padding:2px 6px;border-radius:4px">${utils.escapeHtml(b.bookingNo)}</code></td>
                   <td data-label="会议主题">
-                    <div style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${utils.escapeHtml(b.subject)}">
+                    <div class="bookings-my-subject-line" title="${utils.escapeHtml(b.subject)}">
                       ${utils.escapeHtml(b.subject)}
                     </div>
                     ${b.attendeeCount ? `<div style="font-size:12px;color:var(--color-text-tertiary)">${b.attendeeCount}人参会</div>` : ''}
@@ -146,7 +146,7 @@ async function loadBookings(status) {
                     <div style="font-size:12px;color:var(--color-text-tertiary)">${utils.formatTime(b.startTime)} - ${utils.formatTime(b.endTime)}</div>
                   </td>
                   <td data-label="状态"><span class="tag ${utils.statusTag(b.status)}">${utils.statusLabel(b.status)}</span></td>
-                  <td data-label="签到">
+                  <td data-label="签到状态">
                     ${b.status === 'BOOKED' && !canCheckIn ? `<span class="tag tag-neutral">待签到</span>` : ''}
                     ${b.checkInStatus === 'CHECKED_IN' || b.status === 'CHECKED_IN' ? `<span class="tag tag-success">已签到</span>` : ''}
                     ${b.status === 'FINISHED' ? `<span class="tag tag-neutral">已完成</span>` : ''}

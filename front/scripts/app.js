@@ -27,104 +27,29 @@ const App = {
     if (hash === '#/login' || hash === '' || !hash) return;
 
     const user = auth.getUser() || { name: '用户', username: 'user' };
-    const isMobile = window.innerWidth <= 768;
-    const isAdmin = auth.isAdmin();
-
-    // 用户端菜单（手机端显示，包括管理员在手机上也显示）
-    const userMenuHtml = isMobile ? `
-      <div class="sidebar-section-label">菜单</div>
-      <a href="#/home" class="nav-item" data-page="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        首页工作台
-      </a>
-      <a href="#/rooms" class="nav-item" data-page="rooms">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <rect x="3" y="4" width="18" height="18" rx="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        会议室列表
-      </a>
-      <a href="#/bookings/new" class="nav-item" data-page="bookings-new">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-        新建预定
-      </a>
-      <a href="#/bookings/my" class="nav-item" data-page="bookings-my">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-        </svg>
-        我的预定
-        <span class="nav-badge" id="bookingBadge">${this.getActiveBookingCount()}</span>
-      </a>
-      <a href="#/calendar" class="nav-item" data-page="calendar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        日历视图
-      </a>
-    ` : '';
-
-    // 管理端菜单（仅管理员在电脑端显示）
-    const adminMenuHtml = (isAdmin && !isMobile) ? `
-      <div class="sidebar-section-label">管理端</div>
-      <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        会议室管理
-      </a>
-      <a href="#/admin/bookings" class="nav-item" data-page="admin-bookings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-        </svg>
-        预定记录
-      </a>
-      <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-        </svg>
-        数据统计
-      </a>
-      <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        审批管理
-        <span class="nav-badge" id="approvalBadge" style="display:none">0</span>
-      </a>
-    ` : '';
+    const isAdminOnly = auth.isAdmin();
+    const isStaff = auth.isStaff();
+    const roleLabel = isAdminOnly ? '管理员' : auth.isApprover() ? '审批员' : '普通用户';
 
     const adminApp = meetingApp.isAdminApp();
-    const sidebarNav = adminApp
-      ? `
-            <div class="sidebar-section-label">管理端</div>
+    const adminRoomsLink = isAdminOnly ? `
             <a href="#/admin/rooms" class="nav-item" data-page="admin-rooms">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                 <polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
               会议室管理
-            </a>
+            </a>` : '';
+    const sidebarNav = adminApp
+      ? `
+            <div class="sidebar-section-label">管理端</div>
+            ${adminRoomsLink}
             <a href="#/admin/bookings" class="nav-item" data-page="admin-bookings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
               </svg>
-              预定与审批
+              预定记录
             </a>
             <a href="#/admin/stats" class="nav-item" data-page="admin-stats">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -132,6 +57,14 @@ const App = {
                 <line x1="6" y1="20" x2="6" y2="14"/>
               </svg>
               数据统计
+            </a>
+            <a href="#/admin/approvals" class="nav-item" data-page="admin-approvals">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              审批管理
+              <span class="nav-badge" id="approvalBadge" style="display:none">0</span>
             </a>`
       : `
             <div class="sidebar-section-label">用户端</div>
@@ -174,9 +107,9 @@ const App = {
               </svg>
               日历视图
             </a>
-            ${isAdmin ? `
+            ${isStaff ? `
             <div class="sidebar-section-label">管理</div>
-            <a href="/admin#/admin/rooms" class="nav-item" data-page="admin-entry">
+            <a href="/admin#${isAdminOnly ? '/admin/rooms' : '/admin/bookings'}" class="nav-item" data-page="admin-entry">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <path d="M9 9h6v6H9z"/>
@@ -188,7 +121,7 @@ const App = {
       <div class="app-layout${adminApp ? ' app-layout--admin' : ''}">
         <!-- Sidebar -->
         <aside class="app-sidebar" id="sidebar">
-          <a href="${adminApp ? '#/admin/rooms' : '#/home'}" class="sidebar-logo">
+          <a href="${adminApp ? (isAdminOnly ? '#/admin/rooms' : '#/admin/bookings') : '#/home'}" class="sidebar-logo">
             <div class="sidebar-logo-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
@@ -210,7 +143,7 @@ const App = {
               <div class="sidebar-avatar">${(user.name || user.username || 'U').charAt(0).toUpperCase()}</div>
               <div class="sidebar-user-info">
                 <div class="sidebar-user-name">${utils.escapeHtml(user.name || user.username)}</div>
-                <div class="sidebar-user-role">${isAdmin ? '管理员' : '普通用户'}</div>
+                <div class="sidebar-user-role">${roleLabel}</div>
               </div>
               <button class="sidebar-user-btn" onclick="App.logout()" title="退出登录">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -227,27 +160,15 @@ const App = {
 
         <!-- Main -->
         <main class="app-main">
-          ${adminApp && isAdmin ? `
-          <div class="admin-mobile-hint" role="status">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true">
-              <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            <span>管理功能建议在<strong>电脑浏览器</strong>中使用，以获得完整表格与统计视图。</span>
-          </div>
-          ` : ''}
           <header class="app-header">
             <div class="header-left">
-<<<<<<< HEAD
               <button type="button" class="header-icon-btn" id="mobileMenuBtn" aria-label="打开菜单" style="display:none">
-=======
-              <button class="header-icon-btn" id="menuToggleBtn" style="display: none;">
->>>>>>> ce761abf795a0e007b9c5b1a4a554422860fa1ed
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                   <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
               </button>
               <div class="header-breadcrumb" id="breadcrumb">
-                ${adminApp ? '<a href="#/admin/rooms">管理端</a>' : '<a href="#/home">首页</a>'}
+                ${adminApp ? (isAdminOnly ? '<a href="#/admin/rooms">管理端</a>' : '<a href="#/admin/bookings">管理端</a>') : '<a href="#/home">首页</a>'}
               </div>
             </div>
             <div class="header-right">
@@ -362,6 +283,8 @@ const App = {
         return /^\/admin\/bookings/.test(h);
       case 'admin-stats':
         return /^\/admin\/stats/.test(h);
+      case 'admin-approvals':
+        return /^\/admin\/approvals/.test(h);
       default:
         return !!(page && h.includes(page));
     }
@@ -383,8 +306,6 @@ const App = {
         const page = item.getAttribute('data-page');
         item.classList.toggle('active', this.navPathActive(page, hash));
       });
-      const adminRoute = /\/admin\//.test(hash.replace(/^#/, '') || '');
-      document.body.classList.toggle('route-admin-mobile', adminRoute && window.innerWidth <= 768);
     };
     document.addEventListener('app:navigate', update);
     window.addEventListener('resize', update);
@@ -479,9 +400,6 @@ const App = {
     if (this._routerSetup) return;
     this._routerSetup = true;
 
-    // 添加一个标志，防止重复提示
-    let hasShownDeviceWarning = false;
-
     router.guard((path) => {
       const adminApp = meetingApp.isAdminApp();
       if (!auth.isLoggedIn() && path !== '/login') {
@@ -489,24 +407,15 @@ const App = {
         return false;
       }
       if (auth.isLoggedIn() && path === '/login') {
-        if (auth.isAdmin()) {
-          window.location.href = '/admin#/admin/rooms';
-          return false;
-        }
-        router.navigate('/home');
+        auth.redirectAfterLogin();
         return false;
       }
-      if (adminApp && auth.isLoggedIn() && !auth.isAdmin()) {
+      if (adminApp && auth.isLoggedIn() && !auth.isStaff()) {
         window.location.href = '/#/home';
         return false;
       }
-      if (auth.isAdmin() && !adminApp && path !== '/login') {
-        // 管理员强制进入管理后端
-        window.location.href = '/admin#/admin/rooms';
-        return false;
-      }
-      if (adminApp && auth.isLoggedIn() && auth.isAdmin() && path !== '/login' && !path.startsWith('/admin')) {
-        router.navigate('/admin/rooms');
+      if (adminApp && auth.isLoggedIn() && auth.isApprover() && path.startsWith('/admin/rooms')) {
+        router.navigate('/admin/bookings');
         return false;
       }
       if (!adminApp && path.startsWith('/admin')) {
@@ -514,8 +423,6 @@ const App = {
         return false;
       }
 
-      // 重置警告标志（当访问正确页面时）
-      hasShownDeviceWarning = false;
       return true;
     });
 

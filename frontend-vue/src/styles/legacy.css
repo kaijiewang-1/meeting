@@ -1,0 +1,8 @@
+@import "../../../front/styles/variables.css";
+@import "../../../front/styles/reset.css";
+@import "../../../front/styles/layout.css";
+@import "../../../front/styles/components.css";
+
+body {
+  min-height: 100vh;
+}

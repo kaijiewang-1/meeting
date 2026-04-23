@@ -1,15 +1,15 @@
 // Admin - Approval management page
 export default async function init() {
-  if (!auth.isAdmin()) {
+  if (!auth.isStaff()) {
     Toast.error('无权限访问');
-    router.navigate('/home');
+    router.navigate('/login');
     return;
   }
 
+  const adminRoot = auth.isAdmin() ? '#/admin/rooms' : '#/admin/bookings';
   App.renderLayout();
   App.updateBreadcrumb([
-    { label: '首页', href: '#/home' },
-    { label: '管理端', href: '#/admin/stats' },
+    { label: '管理端', href: adminRoot },
     { label: '审批管理' },
   ]);
 

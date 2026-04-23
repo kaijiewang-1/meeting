@@ -7,38 +7,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles/variables.css">
-  <link rel="stylesheet" href="styles/reset.css">
-  <link rel="stylesheet" href="styles/layout.css">
-  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="/styles/variables.css">
+  <link rel="stylesheet" href="/styles/reset.css">
+  <link rel="stylesheet" href="/styles/layout.css">
+  <link rel="stylesheet" href="/styles/components.css">
 </head>
 <body>
   <div id="app-boot-placeholder" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f0f2f5;font-family:system-ui,sans-serif;color:#6b7280;font-size:15px;">
     正在加载管理端…
   </div>
-  <script src="scripts/store.js"></script>
-  <script src="scripts/utils.js"></script>
-  <script src="scripts/api.js"></script>
-  <script src="scripts/toast.js"></script>
-  <script src="scripts/router.js"></script>
-  <script src="scripts/app-admin.js"></script>
+  <script src="/scripts/store.js"></script>
+  <script src="/scripts/utils.js"></script>
+  <script src="/scripts/api.js"></script>
+  <script src="/scripts/toast.js"></script>
+  <script src="/scripts/router.js"></script>
+  <script src="/scripts/app-admin.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 检查设备类型，如果是手机端则提示
-      if (window.innerWidth <= 768) {
-        alert('管理端请在电脑上使用');
-        document.body.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f0f2f5;font-family:system-ui;text-align:center"><div><h2>请在电脑上使用</h2><p>管理端仅支持电脑端访问</p></div></div>';
-        return;
-      }
-      if (!window.location.hash) {
-        if (auth.isLoggedIn()) {
-          // 检查是否为管理员
-          if (auth.isAdmin()) {
-            window.location.hash = '#/admin/stats';
-          } else {
-            window.location.hash = '#/login';
-            alert('无权限访问管理端');
-          }
+      const h = window.location.hash;
+      if (!h || h === '#') {
+        if (auth.isLoggedIn() && auth.isStaff()) {
+          window.location.hash = auth.isAdmin() ? '#/admin/rooms' : '#/admin/bookings';
         } else {
           window.location.hash = '#/login';
         }

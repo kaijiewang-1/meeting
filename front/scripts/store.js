@@ -85,12 +85,15 @@ const auth = {
     return String(r).toLowerCase();
   },
   isAdmin: () => String(store.get('role') || '').toUpperCase() === 'ADMIN',
+  /** 审批人（可进管理端，但无会议室管理） */
+  isApprover: () => String(store.get('role') || '').toUpperCase() === 'APPROVER',
+  /** 管理员或审批人（可见「管理后台」入口） */
+  isStaff: () => ['ADMIN', 'APPROVER'].includes(String(store.get('role') || '').toUpperCase()),
   isLoggedIn: () => !!store.get('token'),
   login(user, token, role = 'user') {
     store.set('user', user);
     store.set('token', token);
-    // 将角色转为小写，统一为 'admin' 或 'user'
-    store.set('role', role.toLowerCase());
+    store.set('role', String(role || 'user').toLowerCase());
   },
   logout() {
     store.clear();
@@ -99,6 +102,11 @@ const auth = {
     } else {
       window.location.hash = '#/login';
     }
+  },
+
+  /** 登录成功或已登录访问 /login 时，统一进入用户预约端 */
+  redirectAfterLogin() {
+    window.location.href = '/#/home';
   },
 };
 

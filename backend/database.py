@@ -257,23 +257,31 @@ def migrate_schema(cursor):
         'CREATE INDEX IF NOT EXISTS idx_room_visible_colleges_room ON room_visible_colleges(room_id)'
     )
 
-    cursor.execute("SELECT 1 FROM users WHERE username = 'approver' LIMIT 1")
-    if not cursor.fetchone():
-        from werkzeug.security import generate_password_hash
+    from werkzeug.security import generate_password_hash
+
+    def ensure_user(username, name, email, role, college_code=''):
+        cursor.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1", (username,))
+        if cursor.fetchone():
+            return
         cursor.execute(
             '''
             INSERT INTO users (username, password_hash, name, email, role, college_code)
             VALUES (?, ?, ?, ?, ?, ?)
             ''',
             (
-                'approver',
+                username,
                 generate_password_hash('123456'),
-                '审批专员',
-                'approver@company.com',
-                'APPROVER',
-                '',
+                name,
+                email,
+                role,
+                college_code,
             ),
         )
+
+    # 保底测试账号：普通用户 / 审批员 / 管理员
+    ensure_user('admin', '系统管理员', 'admin@company.com', 'ADMIN', '')
+    ensure_user('user', '普通用户', 'user@company.com', 'USER', 'CS')
+    ensure_user('approver', '审批专员', 'approver@company.com', 'APPROVER', '')
 
 
 def seed_data():

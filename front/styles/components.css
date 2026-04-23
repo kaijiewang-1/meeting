@@ -713,7 +713,7 @@
     bottom: max(12px, env(safe-area-inset-bottom, 0px));
     align-items: stretch;
   }
-  body:not(.route-admin-mobile) .toast-container {
+  body:not(:has(.app-layout--admin)) .toast-container {
     bottom: calc(12px + var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
   }
   .toast {

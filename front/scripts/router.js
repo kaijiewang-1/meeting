@@ -46,7 +46,8 @@ class Router {
   }
 
   async _resolve() {
-    const path = window.location.hash.slice(1) || '/home';
+    const raw = window.location.hash.slice(1);
+    const path = raw && raw !== '/' ? raw : '/login';
     const matched = this._match(path);
 
     // Check guards
@@ -70,8 +71,8 @@ class Router {
         }
       }
     } else {
-      // 404
-      this.navigate('/home');
+      // 未知路由：回到登录（已登录则由各端 guard 再跳到首页/管理端）
+      this.navigate('/login');
     }
   }
 }

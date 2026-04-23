@@ -48,9 +48,8 @@ export default function init() {
           <div style="text-align:center;font-size:12px;color:var(--color-text-tertiary);padding-top:20px;border-top:1px solid var(--color-border)">
             <div style="margin-bottom:8px;font-weight:600;color:var(--color-text-secondary)">测试账号</div>
             <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px">
-              <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">zhangsan</code>/123456</span>
-              <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">lisi</code>/123456</span>
-              <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">wangwu</code>/123456</span>
+              <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">user</code>/123456</span>
+              <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">approver</code>/123456</span>
               <span><code style="background:var(--color-bg);padding:2px 6px;border-radius:4px">admin</code>/123456</span>
             </div>
           </div>
@@ -150,14 +149,7 @@ export default function init() {
         const res = await api.login(username, password);
         auth.login(res.data.user, res.data.token, res.data.role);
         Toast.success('登录成功，正在跳转...');
-        setTimeout(() => {
-          if (String(res.data.role || '').toUpperCase() === 'ADMIN') {
-            // 管理员直接进入管理后端
-            window.location.href = '/admin#/admin/rooms';
-          } else {
-            window.location.hash = '#/home';
-          }
-        }, 300);
+        setTimeout(() => auth.redirectAfterLogin(), 300);
       } catch (err) {
         Toast.error(err.message || '登录失败，请检查用户名和密码');
         btn.disabled = false;

@@ -93,7 +93,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print("  用户端: http://127.0.0.1:5000/  登录: http://127.0.0.1:5000/login  管理端: http://127.0.0.1:5000/admin")
     print("  局域网: http://0.0.0.0:5000")
-    print("  测试账号: user / 123456（普通）  approver / 123456（审批）  admin / 123456（管理员）")
+    print("  测试账号: user / 123456（普通用户）  approver / 123456（审批员）  admin / 123456（管理员）")
     print("  公网 HTTPS: 见 docs/PUBLIC_HTTPS.md（Cloudflare Tunnel / ngrok）")
     print("=" * 50 + "\n")
     app.run(host='0.0.0.0', port=5000, debug=debug)

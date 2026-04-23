@@ -49,7 +49,8 @@ export default async function init() {
   try {
     const res = await api.getRooms({});
     const select = document.getElementById('calRoom');
-    res.data.forEach(r => {
+    const rooms = Array.isArray(res.data) ? res.data : [];
+    rooms.forEach(r => {
       const opt = document.createElement('option');
       opt.value = r.id;
       opt.textContent = r.name;
@@ -108,15 +109,27 @@ async function renderCalendar(baseDate, roomFilter) {
 
   try {
     const allBookings = [];
-    const allRooms = (await api.getRooms({})).data;
-    const selectedRooms = roomFilter ? allRooms.filter(r => r.id === parseInt(roomFilter)) : allRooms;
+    const roomsRes = await api.getRooms({});
+    const allRooms = Array.isArray(roomsRes.data) ? roomsRes.data : [];
+    const selectedRooms = roomFilter ? allRooms.filter(r => r.id === parseInt(roomFilter, 10)) : allRooms;
 
     for (const room of selectedRooms) {
       for (const date of weekDates) {
         const dateStr = utils.formatDate(date);
         try {
           const res = await api.getRoomSchedule(room.id, dateStr);
-          res.data.forEach(b => allBookings.push({ ...b, roomName: room.name, roomId: room.id }));
+          const list = Array.isArray(res.data) ? res.data : [];
+          list.forEach((raw) => {
+            const startTime = raw.start_time || raw.startTime;
+            const endTime = raw.end_time || raw.endTime;
+            allBookings.push({
+              ...raw,
+              startTime,
+              endTime,
+              roomName: room.name,
+              roomId: room.id,
+            });
+          });
         } catch (e) {}
       }
     }
@@ -154,9 +167,12 @@ async function renderCalendar(baseDate, roomFilter) {
               ${weekDates.map(d => {
                 const dStr = utils.formatDate(d);
                 const dayBookings = allBookings.filter(b => {
-                  const isSameDay = b.startTime.split('T')[0] === dStr;
-                  const isSameRoom = roomFilter ? b.roomId === parseInt(roomFilter) : true;
-                  const isThisHour = new Date(b.startTime).getHours() === sh;
+                  const start = b.startTime || b.start_time;
+                  if (!start) return false;
+                  const dayKey = start.includes('T') ? start.split('T')[0] : start.slice(0, 10);
+                  const isSameDay = dayKey === dStr;
+                  const isSameRoom = roomFilter ? b.roomId === parseInt(roomFilter, 10) : true;
+                  const isThisHour = new Date(start).getHours() === sh;
                   return isSameDay && isSameRoom && isThisHour;
                 });
 
