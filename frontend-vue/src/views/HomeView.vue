@@ -165,3 +165,105 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 修复新建预约按钮悬浮时字体消失的问题 */
+.btn-hero-primary {
+  color: white !important;
+  background: linear-gradient(145deg, var(--accent, #871d41) 0%, var(--accent-hover, #a83258) 100%) !important;
+  border: none !important;
+}
+
+.btn-hero-primary:hover,
+.btn-hero-primary:focus,
+.btn-hero-primary:active {
+  color: white !important;
+  background: var(--accent-hover, #a83258) !important;
+  transform: translateY(-1px);
+}
+
+.home-workbench-book-cta {
+  color: white !important;
+}
+
+.home-workbench-book-cta:hover,
+.home-workbench-book-cta:focus,
+.home-workbench-book-cta:active {
+  color: white !important;
+  background: var(--accent-hover, #a83258) !important;
+}
+
+.home-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.home-list-accent {
+  width: 4px;
+  height: 40px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.home-list-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-list-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-list-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.home-room-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.home-room-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.home-room-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-room-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.home-room-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+</style>

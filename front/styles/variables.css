@@ -1,11 +1,11 @@
 :root {
-  /* Brand - 新主题色 RGB(106, 6, 7) */
-  --color-primary: #6a0607;
-  --color-primary-hover: #4a0405;
+  /* Brand - 新主题色 RGB(135, 29, 65) */
+  --color-primary: #871d41;
+  --color-primary-hover: #a83258;
   --color-primary-light: #f0e6e6;
-  --color-primary-dark: #3a0304;
+  --color-primary-dark: #6f1734;
   --color-primary-muted: #c4b5e8;
-  --shadow-focus-primary: 0 0 0 3px rgba(106, 6, 7, 0.22);
+  --shadow-focus-primary: 0 0 0 3px rgba(135, 29, 65, 0.22);
 
   /* Status */
   --color-available: #10b981;

@@ -4,9 +4,13 @@
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  /* 主题色 RGB(135, 29, 65) */
+  --accent: #871d41;
+  --accent-bg: rgba(135, 29, 65, 0.1);
+  --accent-border: rgba(135, 29, 65, 0.5);
+  --accent-hover: #a83258;      /* 悬停色 - 浅15% */
+  --accent-active: #9e274e;     /* 按下色 - 浅10% */
+  --accent-hover-bg: rgba(135, 29, 65, 0.15);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
@@ -37,9 +41,12 @@
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+    --accent: #871d41;
+    --accent-bg: rgba(135, 29, 65, 0.15);
+    --accent-border: rgba(135, 29, 65, 0.5);
+    --accent-hover: #b83d62;
+    --accent-active: #a83258;
+    --accent-hover-bg: rgba(135, 29, 65, 0.25);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
@@ -115,6 +122,58 @@ code {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
+}
+
+/* 按钮悬停和按下样式 - 只改深红色按钮 */
+button:not(.not-primary),
+.btn:not(.not-primary),
+.btn-primary {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+button:not(.not-primary):hover,
+.btn:not(.not-primary):hover,
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+button:not(.not-primary):active,
+.btn:not(.not-primary):active,
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+  box-shadow: 0 4px 12px rgba(135, 29, 65, 0.3);
+}
+
+.btn-primary:active {
+  background: var(--accent-active) !important;
+  border-color: var(--accent-active) !important;
+}
+
+a {
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+a:active {
+  color: var(--accent-active);
+}
+
+/* 卡片点击效果 */
+.room-card {
+  transition: all 0.2s ease;
+}
+
+.room-card:active {
+  transform: translateY(0);
 }
 
 .hero {
@@ -237,11 +296,17 @@ code {
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    transition: all 0.2s ease;
 
     &:hover {
       box-shadow: var(--shadow);
+      transform: translateY(-1px);
     }
+
+    &:active {
+      transform: translateY(0);
+    }
+
     .button-icon {
       height: 18px;
       width: 18px;
@@ -293,4 +358,44 @@ code {
     right: 0;
     border-right-color: var(--border);
   }
+}
+/* ========== 修复首页按钮悬浮字体颜色 ========== */
+
+/* 修复 hero 区域的新建预约按钮 - 确保文字白色 */
+.btn-hero-primary,
+.btn-hero-primary:link,
+.btn-hero-primary:visited,
+.btn-hero-primary:hover,
+.btn-hero-primary:focus,
+.btn-hero-primary:active {
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* 修复工作台的新建预约按钮 */
+.home-workbench-book-cta,
+.home-workbench-book-cta:link,
+.home-workbench-book-cta:visited,
+.home-workbench-book-cta:hover,
+.home-workbench-book-cta:focus,
+.home-workbench-book-cta:active {
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* 确保所有 btn-primary 文字白色 */
+.btn-primary,
+.btn-primary:link,
+.btn-primary:visited,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  color: #ffffff !important;
+}
+
+/* 修复 btn-hero-secondary 悬浮 */
+.btn-hero-secondary:hover {
+  background: #ffffff !important;
+  border-color: var(--accent, #871d41) !important;
+  color: var(--accent, #871d41) !important;
 }

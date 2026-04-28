@@ -74,7 +74,7 @@ export const utils = {
       BUSY: 'tag-busy',
       MAINTENANCE: 'tag-maintenance',
       BOOKED: 'tag-booked',
-      CHECKED_IN: 'tag-primary',
+      CHECKED_IN: 'tag-success',
       IN_USE: 'tag-busy',
       FINISHED: 'tag-neutral',
       CANCELED: 'tag-danger',
