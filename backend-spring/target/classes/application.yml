@@ -4,7 +4,7 @@ server:
 spring:
   datasource:
     driver-class-name: org.sqlite.JDBC
-    url: jdbc:sqlite:../backend/meeting.db
+    url: jdbc:sqlite:meeting.db
   jackson:
     default-property-inclusion: non_null
 
